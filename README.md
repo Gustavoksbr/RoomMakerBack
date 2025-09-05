@@ -4,14 +4,18 @@ API em **Spring Boot** para gerenciamento de **salas virtuais**, utilizando **Mo
 
 O sistema permite que usuários **criem, procurem, entrem, saiam e excluam salas**. Cada sala pode ser de diferentes categorias, como **Jogo da Velha**, **Jokenpô** ou **Bate-papo**, e todas possuem um **chat em tempo real via WebSocket**.
 
+Veja a aplicação completa hospedada [aqui](https://room-maker-front.vercel.app/)
+
+Veja o código do Front-End [aqui](https://github.com/Gustavoksbr/RoomMakerFront)
+
 ---
 
-# 🚀 1. Passo a passo para rodar o projeto localmente
+## 🚀 1. Passo a passo para rodar o projeto localmente
 
 ---
 
 
-## 🔨 1.1 Pré-requisitos
+### 🔨 1.1 Pré-requisitos
 
 Antes de rodar o projeto, instale os seguintes componentes:
 
@@ -22,7 +26,7 @@ Antes de rodar o projeto, instale os seguintes componentes:
 
 ---
 
-## 📂 1.2 Clonando o projeto
+### 📂 1.2 Clonando o projeto
 
 ```bash
 git clone https://github.com/Gustavoksbr/RoomMakerBack.git
@@ -31,11 +35,11 @@ cd RoomMakerBack
 
 ---
 
-## 🔑 1.3 Configuração de chaves JWT
+### 🔑 1.3 Configuração de chaves JWT
 
 A autenticação utiliza **chaves RSA** que **não estão versionadas** por motivos de segurança.
 
-### Gerando as chaves
+#### Gerando as chaves
 
 Na raiz do projeto, execute no **Git Bash**:
 
@@ -54,7 +58,7 @@ Isso criará os arquivos:
 
 ---
 
-## ⚙️ 1.4 Configuração do `application.properties`
+### ⚙️ 1.4 Configuração do `application.properties`
 
 O arquivo `src/main/resources/application.properties` deve ser configurado com as variáveis necessárias.
 
@@ -84,7 +88,7 @@ spring.mail.port=${ROOMMAKER_EMAIL_PORT}
 spring.mail.username=${ROOMMAKER_EMAIL}
 spring.mail.password=${ROOMMAKER_EMAIL_PASSWORD}
 
-cors.allowed-origins=http://localhost:4200,https://gustavoksbr-room-maker.vercel.app
+cors.allowed-origins=http://localhost:4200,https://room-maker-front.vercel.app/
 ````
 
 👉 Para conexão local com o MongoDB, defina:
@@ -97,7 +101,7 @@ Caso rode um serviço que consuma esta API (como o front-end), ajuste `cors.allo
 
 ---
 
-## 📧 1.5 Configuração de envio de e-mails
+### 📧 1.5 Configuração de envio de e-mails
 
 O sistema envia e-mails para **recuperação de senha**.
 
@@ -115,7 +119,7 @@ ROOMMAKER_EMAIL_PASSWORD=sua-senha-ou-app-password
 
 ---
 
-## ▶️ 1.6 Executando o projeto
+### ▶️ 1.6 Executando o projeto
 
 Na raiz do projeto, rode:
 
@@ -142,7 +146,7 @@ Adicione ao `.gitignore`:
 *.key.pub
 *.env
 ```
-# 🏗  2. Arquitetura Hexagonal
+## 🏗  2. Arquitetura Hexagonal
 
 A estrutura do projeto segue a divisão em três principais camadas:
 
@@ -192,13 +196,13 @@ Camada de implementação das portas, lidando com tecnologias externas.
 
 ![diagrama](diagrama.png)
 
-# 📚 3. Documentação da API
+## 📚 3. Documentação da API
 
 Este documento descreve os principais endpoints da API do **RoomMakerBack**, separados por controlador.
 
 ---
 
-## 👤3.1 Usuário (usuario-controller)
+### 👤3.1 Usuário (usuario-controller)
 
 ### 🔑 Autenticação & Conta
 

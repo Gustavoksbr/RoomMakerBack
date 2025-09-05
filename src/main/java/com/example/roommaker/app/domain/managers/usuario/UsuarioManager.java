@@ -7,7 +7,6 @@ import com.example.roommaker.app.domain.models.Usuario;
 
 import com.example.roommaker.app.domain.models.UsuarioBasicAuth;
 import com.example.roommaker.app.domain.ports.auth.AuthService;
-import com.example.roommaker.app.domain.ports.make.MakeWebhook;
 import com.example.roommaker.app.domain.ports.repository.UsuarioRepository;
 import com.example.roommaker.app.domain.exceptions.ErroDeAutenticacaoGeral;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,13 +22,11 @@ public class UsuarioManager {
 
     private final UsuarioRepository userRepository;
     private final AuthService authService;
-    private final MakeWebhook makeWebhook;
 
     @Autowired
-    public UsuarioManager(UsuarioRepository userRepository, AuthService authService, MakeWebhook makeWebhook) {
+    public UsuarioManager(UsuarioRepository userRepository, AuthService authService) {
         this.userRepository = userRepository;
         this.authService = authService;
-        this.makeWebhook = makeWebhook;
     }
 
 // variaveis e metodos privados
@@ -76,7 +73,6 @@ public class UsuarioManager {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-        this.makeWebhook.sendUser(Usuario.builder().username(usuario.getUsername()).email(usuario.getEmail()).build());
         return authService.generateToken(usuario.getUsername());
     }
     public Response authenticate(Usuario usuario) {

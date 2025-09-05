@@ -1,6 +1,6 @@
 # 📌 RoomMakerBack
 
-API em **Spring Boot** para gerenciamento de **salas virtuais**, utilizando **MongoDB**, autenticação via **JWT (RSA)**, **WebSockets** para comunicação em tempo real e documentação com **Swagger**.
+API em **Spring Boot** para gerenciamento de **salas virtuais**, utilizando **MongoDB**, autenticação via **JWT (RSA)**, **WebSockets** para comunicação em tempo real
 
 O sistema permite que usuários **criem, procurem, entrem, saiam e excluam salas**. Cada sala pode ser de diferentes categorias, como **Jogo da Velha**, **Jokenpô** ou **Bate-papo**, e todas possuem um **chat em tempo real via WebSocket**.
 

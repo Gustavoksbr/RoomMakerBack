@@ -37,7 +37,6 @@ public class GameTicTacToeController {
     @MessageMapping("/sala/{usernameDono}/{nomeSala}/{username}/tictactoe")
     public void comecar( @DestinationVariable String usernameDono, @DestinationVariable String nomeSala, @DestinationVariable String username){ //@Payload TicTacToeComecarRequest request,
         Sala salad = this.salaManager.verificarSeUsuarioEstaNaSalaERetornarSala( nomeSala, usernameDono,username);
-        System.out.println("Chegou ao tictactoe");
        if(!(salad.getCategoria().equals("tictactoe"))){
            throw new UsuarioNaoAutorizado("Esta sala não é de jogo da velha");
        }

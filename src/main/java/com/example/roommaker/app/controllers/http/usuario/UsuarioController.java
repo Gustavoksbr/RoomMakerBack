@@ -27,7 +27,6 @@ public class UsuarioController {
 
     @PostMapping("/login")
     public ResponseEntity<Response> authenticate(@RequestBody @Valid UsuarioParaEntrarRequest usuario){
-//        System.out.println("tentando logar "+usuario.toString());
      Response response = usuarioManager.authenticate(usuario.toDomain());
      return ResponseEntity.ok(response);
 }

@@ -13,6 +13,7 @@ import com.example.roommaker.app.domain.managers.usuario.UsuarioManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,15 +22,15 @@ import java.util.List;
 public class SalaManager {
     // injecoes
 
-    private final AuthService authService;
+//    private final AuthService authService;
     private final SalaRepository salaRepository;
     private final SalaSenderWebsocket webSocketSender;
     private final UsuarioManager usuarioManager;
     private final CategoriaService categoriaService;
 
     @Autowired
-    public SalaManager(AuthService authService, SalaRepository salaRepository, UsuarioManager usuarioManager ,@Lazy SalaSenderWebsocket webSocketSender, CategoriaService categoriaService) {
-        this.authService = authService;
+    public SalaManager(SalaRepository salaRepository, UsuarioManager usuarioManager ,@Lazy SalaSenderWebsocket webSocketSender, CategoriaService categoriaService) {
+//        this.authService = authService;
         this.salaRepository = salaRepository;
         this.usuarioManager = usuarioManager;
         this.categoriaService = categoriaService;
@@ -48,18 +49,20 @@ public class SalaManager {
         return  this.salaRepository.listarPorDono(usernameDono);
     }
 
+    @Transactional
     public Sala criar(Sala sala, String username) {
         sala.setUsernameDono(username);
      this.categoriaService.validarSalaParaOJogo(sala);
      Sala salaCriada = this.salaRepository.criar(sala);
-     this.categoriaService.aposCriacaoDaSala(sala);
-        return salaCriada;
+     return salaCriada;
     }
+
 
     public Sala mostrarSala(String nomeSala, String usernameDono) {
         return this.salaRepository.mostrarSala(nomeSala, usernameDono);
     }
 
+    @Transactional
    public Sala autenticarParticipante(String nomesala, String usernameDono, String senha, String usernameParticipante) {
        this.usuarioManager.encontrarUsername(usernameDono); // unica funcao eh garantir que o dono existe
         if(usernameParticipante.equals(usernameDono)){
@@ -70,7 +73,6 @@ public class SalaManager {
 
        List<String> ouvintes = new ArrayList<>(sala.getUsernameParticipantes());
        ouvintes.add(usernameDono);
-       System.out.println("Adicionando participante: " + sala);
         this.webSocketSender.enviarMensagemParaSala(sala.getUsernameDono(),sala.getNome(),"sala",ouvintes,sala.getUsernameParticipantes());
         return sala;
    }
@@ -79,21 +81,22 @@ public class SalaManager {
         return this.salaRepository.verificarSeUsuarioEstaNaSalaERetornarSala(nomeSala, usernameDono, usernameParticipante);
     }
 
+    @Transactional
     public void excluirSala(String usernameDono, String nomeSala, String username) {
         if(!usernameDono.equals(username)){
             throw new UsuarioNaoAutorizado("Você não pode excluir sem ser o dono da sala!");
         }
-        // this.usuarioRepository.existePorUsername(usernameDono); //teoricamente ja foi verificado pelo JwtInterceptor (já que username == usernameDono), mas por garantia
         Sala sala = this.salaRepository.mostrarSala(nomeSala, usernameDono);
-        this.salaRepository.excluirSala(usernameDono, nomeSala);
 
         List<String> ouvintes = new ArrayList<>(sala.getUsernameParticipantes());
         ouvintes.add(usernameDono);
         this.webSocketSender.enviarMensagemParaSala(sala.getUsernameDono(),sala.getNome(),"sala",ouvintes,sala.getUsernameParticipantes());
-//        this.webSocketSender.enviarMensagemParaSala(usernameDono, nomeSala, "Sala excluida");
+
+        this.salaRepository.excluirSala(usernameDono, nomeSala);
         this.categoriaService.excluirJogo(sala);
     }
 
+    @Transactional
     public Sala sairDaSala(String usernameDono, String nomeSala, String usernameSaindo, String username) {
 
         if(username.equals(usernameDono)){ // se você é o dono da sala
@@ -108,13 +111,11 @@ public class SalaManager {
 
         }
         Sala sala = this.salaRepository.sairDaSala(usernameDono, nomeSala, usernameSaindo);
-        System.out.println("Saindo da sala: " + sala);
         this.categoriaService.notificarSaidaDeUsuario(usernameSaindo, sala);
 
        List<String> ouvintes = new ArrayList<>(sala.getUsernameParticipantes());
         ouvintes.add(usernameDono);
         ouvintes.add(usernameSaindo);
-        System.out.println("Saindo da sala2: " + sala);
         this.webSocketSender.enviarMensagemParaSala(sala.getUsernameDono(),sala.getNome(),"sala",ouvintes,sala.getUsernameParticipantes());
         return sala;
     }

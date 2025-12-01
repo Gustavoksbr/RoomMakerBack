@@ -1,0 +1,44 @@
+### Listar usuarios
+GET http://localhost:8080/usuarios
+
+### Cadastro
+POST http://localhost:8080/cadastro
+Content-Type: application/json
+
+{
+  "username": "",
+  "password": "",
+  "descricao": "",
+  "email": "",
+  "dataNascimento": ""
+}
+
+### Login
+POST http://localhost:8080/login
+Content-Type: application/json
+
+{
+  "username": "",
+  "password": ""
+}
+
+### Caso de uso recuperar senha:
+#1- primeiro solicite o email:
+POST http://localhost:8080/usuario/esquecisenha
+Content-Type: application/json
+
+{
+  "email": ""
+}
+
+###
+#2- depois envie o codigo recebido por email junto com a nova senha:
+POST http://localhost:8080/usuario/novasenha
+Content-Type: application/json
+
+{
+  "password": "",
+  "email": "",
+  "codigo": ""
+}
+

@@ -1,20 +1,24 @@
 package com.example.roommaker.app.services.persistence.sala.entity;
 
 import com.example.roommaker.app.domain.models.Sala;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
+import lombok.*;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.util.ArrayList;
 import java.util.List;
 
-@Data
+@Getter
+@Setter
 @Document(collection = "salas")
 @AllArgsConstructor
 @Builder
+@CompoundIndexes({
+        @CompoundIndex(name = "unique_sala_user", def = "{'username_dono': 1, 'nome': 1}", unique = true)
+})
 public class SalaEntity {
     @Id
     private String id;
@@ -58,12 +62,6 @@ public class SalaEntity {
     public void removeParticipante(String username){
         this.usernameParticipantes.remove(username);
     }
-//
-//    public void atualizar(Sala sala) {
-//    }
-
-//    public void deletar(){
-//    }
 
     public Sala toSala() {
         return new Sala(this.id, this.usernameDono, this.nome, this.categoria, this.senha, this.qtdCapacidade, this.disponivel,this.usernameParticipantes);

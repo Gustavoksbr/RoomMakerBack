@@ -1,5 +1,6 @@
 package com.example.roommaker.app.services.persistence.usuario.repository;
 
+import com.example.roommaker.app.domain.exceptions.Erro409;
 import com.example.roommaker.app.domain.exceptions.ErroDeAutenticacaoGeral;
 import com.example.roommaker.app.services.persistence.usuario.entity.UserEntity;
 import com.example.roommaker.app.domain.models.Usuario;
@@ -7,6 +8,7 @@ import com.example.roommaker.app.domain.ports.repository.UsuarioRepository;
 import com.example.roommaker.app.domain.exceptions.UsernameAlreadyExistsException;
 import com.example.roommaker.app.domain.exceptions.UsuarioNaoEncontrado;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,7 +18,6 @@ import java.util.List;
 
 
 @Repository
-@Transactional
 public class UsuarioRepositoryImpl implements UsuarioRepository {
     @Autowired
     private MongoUsuarioRepository mongoUsuarioRepository;
@@ -32,10 +33,6 @@ public class UsuarioRepositoryImpl implements UsuarioRepository {
     @Override
     public Boolean existePorUsername(String username) {
         return this.mongoUsuarioRepository.existsByUsername(username);
-    }
-    @Override
-    public Boolean existePorEmail(String email) {
-        return this.mongoUsuarioRepository.existsByEmail(email);
     }
 
     @Override
@@ -65,45 +62,35 @@ public class UsuarioRepositoryImpl implements UsuarioRepository {
     @Override
     public List<Usuario> listarComSubstring(String substring) {
         List<Usuario> lista= this.mongoUsuarioRepository.encontrarPorSubstring(substring).orElse(new ArrayList<>()).stream().map(UserEntity::toUsuarioSemSenha).toList();
-        System.out.println(lista);
         return lista;
     }
 
     @Override
     public void criar(Usuario usuario) {
-        this.validarNovoUsuario(usuario);
-//        try {
-//            Thread.sleep(10000);
-//        } catch (InterruptedException e) {
-//            throw new RuntimeException(e);
-//        }
-        System.out.println(usuario);
-        this.mongoUsuarioRepository.save(new UserEntity(usuario)).toUsuario();
+        try {
+            this.mongoUsuarioRepository.save(new UserEntity(usuario)).toUsuario();
+        } catch (DataIntegrityViolationException e) {
+
+            String mensagem = e.getMostSpecificCause().getMessage();
+
+            if (mensagem != null) {
+                if (mensagem.contains("username")) {
+                    throw new Erro409("O username já está em uso.");
+                }
+                if (mensagem.contains("email")) {
+                    throw new Erro409("O email já está em uso.");
+                }
+            }
+
+            throw new Erro409("Username ou Email já existem.");
+        }
     }
 
-    @Override
-
-    public Usuario editarDescricao(Usuario usuario) {
-        return this.mongoUsuarioRepository.findByUsernameAndAtivoTrue(usuario.getUsername()).map(userEntity -> {
-            userEntity.setDescricao(usuario.getDescricao());
-            return this.mongoUsuarioRepository.save(userEntity).toUsuario();
-        }).orElseThrow(() -> new UsuarioNaoEncontrado(usuario.getUsername()));
-    }
-
-    @Override
-    public void deletar(String username) {
-        UserEntity userEntity = this.mongoUsuarioRepository.findByUsernameAndAtivoTrue(username)
-                .orElseThrow(() -> new UsuarioNaoEncontrado(username));
-        userEntity.deletar();
-        this.mongoUsuarioRepository.save(userEntity);
-
-    }
 
     @Override
     public Usuario encontrarUsernameDeOutroUsuario(String username) {
         return this.entityFindByUsername(username).toUsuario();
     }
-
 
 
     @Override
@@ -113,17 +100,6 @@ public class UsuarioRepositoryImpl implements UsuarioRepository {
          this.mongoUsuarioRepository.save(userEntity);
         }
 
-    @Override
-    public void validarNovoUsuario(Usuario usuario) {
-        String username = usuario.getUsername();
-        String email = usuario.getEmail();
-        if (this.existePorUsername(usuario.getUsername())) {
-            throw new UsernameAlreadyExistsException(username);
-        }
-        if (this.existePorEmail(usuario.getEmail())) {
-            throw new UsernameAlreadyExistsException("with email "+email);
-        }
-    }
     @Override
     public LocalDate getDataNascimento(String username) {
         UserEntity userEntity = this.entityFindByUsername(username);

@@ -10,20 +10,13 @@ public interface UsuarioRepository {
 
     List<Usuario> listarComSubstring(String substring);
 
-    void criar(Usuario usuario) throws InterruptedException;
-
-    Usuario editarDescricao(Usuario usuario);
-
-    void deletar(String username); // ainda nao implementado
+    void criar(Usuario usuario);
 
     Usuario encontrarUsernameDeOutroUsuario(String username);
 
     void alterarDoisFatores(Usuario usuario);
 
-    void validarNovoUsuario(Usuario usuario);
-
     Boolean existePorUsername(String username);
-    Boolean existePorEmail(String email);
 
     Usuario encontrarUsernameDoUsuarioAtual(String username);
 
@@ -32,4 +25,11 @@ public interface UsuarioRepository {
     void alterarSenha(Usuario usuario);
 
     LocalDate getDataNascimento(String username);
+
+    // futuras ideias
+
+    //Usuario editarDescricao(Usuario usuario);
+    //void deletar(String username);
+    //Boolean existePorEmail(String email);
+    //void validarNovoUsuario(Usuario usuario);
 }

@@ -13,13 +13,12 @@ import java.time.LocalDate;
 @NoArgsConstructor
 public class UsuarioParaCriarRequest {
     @NotBlank
-//    @NotNull
-//    @NotEmpty
     @Pattern(regexp = "^[a-zA-Z0-9]+$")
     @Size(max = 15)
 
     private String username;
     @NotBlank
+    @Size(min = 3, max = 64)
     private String password;
     private String descricao;
     @NotBlank

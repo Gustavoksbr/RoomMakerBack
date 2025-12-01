@@ -47,7 +47,6 @@ public class HttpExceptionController {
         ex.getBindingResult().getAllErrors().forEach(error -> {
             String fieldName = ((FieldError) error).getField();
             String errorMessage = error.getDefaultMessage();
-            System.out.println("errorMessage: ("+errorMessage+")");
             if(errorMessage!=null && errorMessage.equals("deve corresponder a \"^[a-zA-Z0-9]+$\"")) {
                 errorMessage = "deve conter apenas letras e números.";
             }
@@ -79,19 +78,7 @@ public class HttpExceptionController {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
     }
 
-    // ====================================================================================================
-    // 500
-    @ExceptionHandler
-    public ResponseEntity<String> handleException(Exception ex) {
-        System.out.println("Erro 500: "+ex.getMessage());
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro interno no servidor.");
-    }
-//    @ExceptionHandler
-//    public void handleException(Exception ex) {
-//        System.out.println("Erro: "+ex.getMessage());
-//    }
 
-    // usuario
 
 
     @ExceptionHandler(UsernameAlreadyExistsException.class) //409
@@ -101,7 +88,6 @@ public class HttpExceptionController {
 
     @ExceptionHandler(UsuarioNaoEncontrado.class) //404
     public ResponseEntity<String> handleUsuarioNaoEncontrado(UsuarioNaoEncontrado ex) {
-        System.out.println("http!!!!");
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
     }
 
@@ -154,10 +140,19 @@ public class HttpExceptionController {
     public ResponseEntity<String> handleErroDeAutenticacaoGeral(ErroDeAutenticacaoGeral ex) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Erro 401: "+ex.getMessage());
     }
-/********************************************/
-//testes
-//    @MessageExceptionHandler(IndexOutOfBoundsException.class)
-//    public String handleIndexOutOfBoundsException(IndexOutOfBoundsException ex) {
-//        return "Erro 500: " + ex.getMessage();
-//    }
+
+    @ExceptionHandler({ io.jsonwebtoken.JwtException.class })
+    public ResponseEntity<String> handleInvalidJwtKey(io.jsonwebtoken.JwtException ex) {
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body("Erro 401: Token inválido ou chave incompatível.");
+    }
+
+    // ====================================================================================================
+    // 500
+    @ExceptionHandler
+    public ResponseEntity<String> handleException(Exception ex) {
+        System.out.println("Erro 500\n Excecao:"+ex.getClass()+"\nMensagem:"+ex.getMessage());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro interno no servidor.");
+    }
 }

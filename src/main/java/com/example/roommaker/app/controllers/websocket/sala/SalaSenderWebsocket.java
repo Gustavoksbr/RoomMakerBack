@@ -17,7 +17,6 @@ public class SalaSenderWebsocket {
         for (String ouvinte : ouvintes) {
             String destino = "/topic/sala/" + usernameDono + "/" + salaNome + "/" + ouvinte + "/" + tipo;
             if(mensagem!=null){
-                System.out.println("Enviando mensagem ("+ mensagem +") para: " + destino);
                 this.messagingTemplate.convertAndSend(destino, mensagem);
             }
         }

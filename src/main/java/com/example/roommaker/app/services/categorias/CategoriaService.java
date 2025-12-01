@@ -4,7 +4,6 @@ import com.example.roommaker.app.domain.models.Sala;
 import com.example.roommaker.app.domain.exceptions.ErroDeRequisicaoGeral;
 import com.example.roommaker.app.domain.ports.repository.SalaRepository;
 import com.example.roommaker.app.services.categorias.examples.chat.core.ChatManager;
-import com.example.roommaker.app.services.categorias.examples.coup.domain.CoupManager;
 import com.example.roommaker.app.services.categorias.examples.jokenpo.domain.JokenpoManager;
 import com.example.roommaker.app.services.categorias.examples.tictactoe.domain.TicTacToeManager;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,16 +17,16 @@ public class CategoriaService {
     private final TicTacToeManager ticTacToeManager;
     private final JokenpoManager jokenpoManager;
     private final ChatManager chatManager;
-    private final CoupManager coupManager;
+//    private final CoupManager coupManager; //futuramente sera adicionado
 
     @Autowired
-    public CategoriaService(SalaRepository salaRepository, TicTacToeManager ticTacToeManager, JokenpoManager jokenpoManager, ChatManager chatManager, CoupManager coupManager) {
+    public CategoriaService(SalaRepository salaRepository, TicTacToeManager ticTacToeManager, JokenpoManager jokenpoManager, ChatManager chatManager) {
 
         this.salaRepository = salaRepository;
         this.ticTacToeManager = ticTacToeManager;
         this.jokenpoManager = jokenpoManager;
         this.chatManager = chatManager;
-        this.coupManager = coupManager;
+//        this.coupManager = coupManager;
     }
 
     public void verificarSeUsuarioEstaNoJogo(String usernameParticipante, String usernameDono, String nomeSala) {
@@ -52,8 +51,9 @@ public class CategoriaService {
             this.ticTacToeManager.validarSalaParaOJogo(sala);
         } else if (sala.getCategoria().equals("jokenpo")) {
             this.jokenpoManager.validarSalaParaOJogo(sala);
-        }
-        else if(sala.getQtdCapacidade()<2 || sala.getQtdCapacidade()>1000){
+//        } else if (sala.getCategoria().equals("impostor-clash")) {
+            // this.impostorClashManager.validarSalaParaOJogo(sala);
+        } else if(sala.getQtdCapacidade()<2 || sala.getQtdCapacidade()>1000){
             throw new ErroDeRequisicaoGeral("Quantidade de participantes deve ser entre 2 a 1000");
         }
     }

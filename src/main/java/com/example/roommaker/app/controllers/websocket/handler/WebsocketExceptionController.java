@@ -14,6 +14,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.oauth2.jwt.BadJwtException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 
+
 @ControllerAdvice
 public class WebsocketExceptionController {
     private final SimpMessagingTemplate messagingTemplate;
@@ -26,28 +27,12 @@ public class WebsocketExceptionController {
         return new ErrorMensagem("mamamia: "+ex.getMessage(),"400") ;
     }
 
-//    @MessageExceptionHandler(MethodArgumentNotValidException.class)
-//    public ErrorMensagem handleValidationExceptions(MethodArgumentNotValidException ex) { // nao funciona
-//        System.out.println("Tratando validação em WebSocket...");
-//        StringBuilder erros = new StringBuilder();
-//
-//        // Extrai os erros de campo
-//        ex.getBindingResult().getAllErrors().forEach(error -> {
-//            String fieldName = ((FieldError) error).getField();
-//            String errorMessage = error.getDefaultMessage();
-//            erros.append("Campo '").append(fieldName).append("': ").append(errorMessage).append(". ");
-//        });
-//
-//        return new ErrorMensagem(erros.toString().trim(), "400");
-//    }
     @MessageExceptionHandler(UsuarioNaoAutorizado.class)
     public void handleUsuarioNaoAutorizado(UsuarioNaoAutorizado ex) {
-        System.out.println("websocket!!!!");
         String username = Contexto.getUsername();
         if (username != null) {
             this.messagingTemplate.convertAndSend("/topic/" + username, ex);
         }
-        System.out.println("USUARIO NAO ENCONTRADO NO CONTEXTO. ERRO: " + ex.getMessage());
     }
 
 
@@ -63,7 +48,6 @@ public class WebsocketExceptionController {
 
     @MessageExceptionHandler(UsuarioNaoEncontrado.class)
     public String handleUsuarioNaoEncontrado(UsuarioNaoEncontrado ex) {
-        System.out.println("websocket!!!!");
         return ex.getMessage();
     }
 
@@ -106,17 +90,12 @@ public class WebsocketExceptionController {
     public String handleErroDeAutenticacaoGeral(ErroDeAutenticacaoGeral ex) {
         return "Erro 401: " + ex.getMessage();
     }
-    /********************************************/
-    //testes
 
-    @MessageExceptionHandler(Exception.class)
-    public String handleException(Exception ex) {
-        System.out.println(ex.getMessage());
-       this.messagingTemplate.convertAndSend("/topic/erro", ex.getMessage());
-        return "Erro 500: " + ex.getMessage();
+    @MessageExceptionHandler({ io.jsonwebtoken.JwtException.class })
+    public String handleJwtException(io.jsonwebtoken.JwtException ex) {
+        return "Erro 401: " + ex.getMessage();
     }
-//    @MessageExceptionHandler(IndexOutOfBoundsException.class)
-//    public String handleIndexOutOfBoundsException(IndexOutOfBoundsException ex) {
-//        return "Erro 500: " + ex.getMessage();
-//    }
+
+
+
 }

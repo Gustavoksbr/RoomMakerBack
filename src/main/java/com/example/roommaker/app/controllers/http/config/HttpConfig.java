@@ -40,7 +40,8 @@ public class HttpConfig implements WebMvcConfigurer {
                         "/login2fa",
                         "/usuario/esquecisenha",
                         "/usuario/novasenha",
-                        "/swagger-ui/"
+                        "/swagger-ui/",
+                        "/ping"
                 );
     }
 

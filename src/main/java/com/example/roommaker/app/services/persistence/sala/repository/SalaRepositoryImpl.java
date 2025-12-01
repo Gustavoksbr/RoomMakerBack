@@ -7,13 +7,13 @@ import com.example.roommaker.app.domain.ports.repository.SalaRepository;
 import com.example.roommaker.app.domain.exceptions.ErroDeRequisicaoGeral;
 import com.example.roommaker.app.domain.exceptions.UsuarioNaoAutorizado;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Repository
-@Transactional
 public class SalaRepositoryImpl implements SalaRepository {
 
     @Autowired
@@ -27,14 +27,6 @@ public class SalaRepositoryImpl implements SalaRepository {
 
     @Override
     public List<Sala> listar(String usernameDono, String nomeSala, String categoria) {
-//        return this.mongoSalaRepository.findByUsernameDonoAndNomeAndCategoria(usernameDono, nomeSala, categoria).stream().map(SalaEntity::toSala).toList();
-
-//        return this.mongoSalaRepository.findAll().stream()
-//                .filter(sala -> (usernameDono == null || usernameDono.isEmpty() || sala.getUsernameDono().equals(usernameDono)) &&
-//                        (nomeSala == null || nomeSala.isEmpty() || sala.getNome().equals(nomeSala)) &&
-//                        (categoria == null || categoria.isEmpty() || sala.getCategoria().equals(categoria)))
-//                .map(SalaEntity::toSala)
-//                .toList();
 
         return this.mongoSalaRepository.findByUsernameDonoAndNomeAndCategoriaSubstring(usernameDono, nomeSala, categoria).stream()
                 .map(SalaEntity::toSala)
@@ -52,12 +44,11 @@ public class SalaRepositoryImpl implements SalaRepository {
 
     @Override
     public Sala criar(Sala sala) {
-        if(this.mongoSalaRepository.existsByNomeAndUsernameDono(sala.getNome(), sala.getUsernameDono())){
-            throw new SalaJaExiste(sala.getNome());
+        try {
+            return this.mongoSalaRepository.save(new SalaEntity(sala)).toSala();
+        } catch (DataIntegrityViolationException e) {
+            throw new Erro409("Já existe uma sala chamada '"+sala.getNome()+"' para o dono "+sala.getUsernameDono());
         }
-        return this.mongoSalaRepository
-                .save(new SalaEntity(sala))
-                .toSala();
     }
 
     @Override
@@ -65,24 +56,6 @@ public class SalaRepositoryImpl implements SalaRepository {
         return this.entityFindByNomeAndUsernameDono(nomeSala, usernameDono).toSala();
     }
 
-
-//    @Override
-//    public Sala editar(Sala sala) {
-//        SalaEntity salaEntity = mongoSalaRepository.findById(sala.getOrdem()).orElseThrow(()->new SalaNaoEncontrada(sala.getOrdem()));
-//        salaEntity.salvar(sala);
-//        return mongoSalaRepository.save(salaEntity).toSala();
-//    }
-//    @Override
-//    public void deletar(Long ordem) {
-//        SalaEntity salaEntity = mongoSalaRepository.findById(ordem).orElseThrow(()->new SalaNaoEncontrada(ordem));
-//        salaEntity.deletar();
-//        mongoSalaRepository.save(salaEntity);
-//    }
-//
-//    @Override
-//    public Sala encontrarPorId(Long ordem) {
-//        return mongoSalaRepository.findById(ordem).orElseThrow(()->new SalaNaoEncontrada(ordem)).toSala();
-//    }
 
     @Override
     public Sala
@@ -126,9 +99,7 @@ public class SalaRepositoryImpl implements SalaRepository {
     public Sala sairDaSala(String usernameDono, String nomeSala, String usernameSaindo) {
         SalaEntity salaEntity = this.entityFindByNomeAndUsernameDono(nomeSala, usernameDono);
         salaEntity.removeParticipante(usernameSaindo);
-        SalaEntity a = this.mongoSalaRepository.save(salaEntity);
-        System.out.println("salaEntity: "+salaEntity);
-        System.out.println("a: "+a);
+        this.mongoSalaRepository.save(salaEntity);
         return salaEntity.toSala();
     }
 

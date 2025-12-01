@@ -56,7 +56,7 @@ public class SalaControllerHttp {
             return ResponseEntity.ok(salaResponse);
     }
     @PostMapping("/{usernameDono}/{nomeSala}")
-    public ResponseEntity<SalaResponse> adicionarParticipante(@PathVariable String usernameDono, @PathVariable String nomeSala, HttpServletRequest request, @RequestBody @Valid EntrarSalaPorSenha senha)
+    public ResponseEntity<SalaResponse> EntrarNaSala(@PathVariable String usernameDono, @PathVariable String nomeSala, HttpServletRequest request, @RequestBody @Valid EntrarSalaPorSenha senha)
     {
 
         String username = request.getAttribute("username").toString();
@@ -83,7 +83,6 @@ public class SalaControllerHttp {
     {
         String username = request.getAttribute("username").toString();
         Sala sala = this.salaManager.sairDaSala(usernameDono,nomeSala,usernameParticipante,username);
-        System.out.println("mostrar sala"+sala);
         return ResponseEntity.ok(new SalaResponse(sala));
     }
 }

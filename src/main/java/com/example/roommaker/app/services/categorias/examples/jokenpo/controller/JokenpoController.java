@@ -44,10 +44,8 @@ public class JokenpoController {
 
     @MessageMapping("/sala/{usernameDono}/{nomeSala}/{username}/jokenpo/lance")
     public void lance(@Payload JokenpoLanceRequest request, @DestinationVariable String usernameDono, @DestinationVariable String nomeSala, @DestinationVariable String username) {
-        System.out.println("Chegou ao jokenpo");
         Sala salad = this.salaManager.verificarSeUsuarioEstaNaSalaERetornarSala( nomeSala, usernameDono,username);
         if(!salad.getCategoria().equals("jokenpo")){
-            System.out.println("sala nao eh de jokenpo: " + salad.getCategoria());
             throw new UsuarioNaoAutorizado("Esta sala não é de joken po");
         }
         List<String> ouvintes = salad.getUsernameParticipantes().isEmpty() ? new ArrayList<>() : salad.getUsernameParticipantes();
@@ -64,8 +62,6 @@ public class JokenpoController {
                 response.setLanceDono(JokenpoLance.SEGREDO);
             }
         }
-
-        System.out.println("Enviando jokenpo: " + response.toString());
         this.salaSenderWebsocket.enviarMensagemParaSala(usernameDono, nomeSala, "jokenpo", ouvintes, response);
     }
 }

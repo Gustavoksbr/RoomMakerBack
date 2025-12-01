@@ -54,25 +54,16 @@ public class UsuarioManager {
         return lista;
     }
     public String createUser(Usuario usuario)  {
-        // Criar uma nova instância de Usuario com a senha criptografada
-        //this.userRepository.validarNovoUsuario(usuario); // verificar se o username ou o email ja estao sendo utilizados por outra pessoa
-
-        String senhaCriptografada = this.authService.encode(usuario.getPassword());
-       Usuario usuarioParaSalvar = Usuario.builder()
-    .username(usuario.getUsername())
-    .password(senhaCriptografada)
-    .descricao(usuario.getDescricao())
-    .email(usuario.getEmail())
-    .ativo(true)
-    .doisFatores(false)
-               .dataNascimento(usuario.getDataNascimento())
-    .build();
-
-        try {
-            this.userRepository.criar(usuarioParaSalvar);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
+        String senhaCriptografada = this.authService.encode(usuario.getPassword());Usuario usuarioParaSalvar = Usuario.builder()
+            .username(usuario.getUsername())
+            .password(senhaCriptografada)
+            .descricao(usuario.getDescricao())
+            .email(usuario.getEmail())
+            .ativo(true)
+            .doisFatores(false)
+            .dataNascimento(usuario.getDataNascimento())
+            .build();
+     this.userRepository.criar(usuarioParaSalvar);
         return authService.generateToken(usuario.getUsername());
     }
     public Response authenticate(Usuario usuario) {

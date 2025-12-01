@@ -144,7 +144,6 @@ public class TicTacToeManager {
             ticTacToeSala.setJogoAtual(jogoAtual);
         }
         this.ticTacToeRepository.salvar(ticTacToeSala);
-        System.out.println("jogo atual: " + jogoAtual.getPosicao());
         return jogoAtual;
     }
 

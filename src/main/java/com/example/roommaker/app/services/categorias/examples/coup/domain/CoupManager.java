@@ -46,10 +46,6 @@ private final Stack<Personagem> baralho = new Stack<>();
         SalaDosCoups salaDosCoups = new SalaDosCoups(sala);
         this.coupRepository.criarSalaDosCoups(salaDosCoups);
     }
-
-    public void olar(){
-        System.out.println("olar");
-    }
     public Coup iniciarJogo(Sala sala){
         if(sala.getUsernameParticipantes() == null || sala.getUsernameParticipantes().isEmpty()){
             throw new ErroDeRequisicaoGeral("Número de jogadores insuficiente");
@@ -89,7 +85,6 @@ private final Stack<Personagem> baralho = new Stack<>();
         }
         coup = novoTurno(coup);
         salaDosCoups.setCoupAtual(coup);
-        System.out.println(coup.toString());
 
        return this.coupRepository.salvarSalaDosCoups(salaDosCoups).getCoupAtual();
     }

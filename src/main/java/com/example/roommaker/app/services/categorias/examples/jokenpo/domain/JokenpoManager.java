@@ -102,7 +102,7 @@ public class JokenpoManager {
     }
     public void validarSalaParaOJogo(Sala sala){
         if(sala.getQtdCapacidade()!=2){
-            throw new ErroDeRequisicaoGeral("Sala de tictactoe deve ter capacidade de 2");
+            throw new ErroDeRequisicaoGeral("Sala de jokenpo deve ter capacidade de 2");
         }
     }
     public void saidaDeParticipante(String usernameParticipante, Sala sala){

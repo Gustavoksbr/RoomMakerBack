@@ -36,11 +36,6 @@ out/
 ### VS Code ###
 .vscode/
 
-# chaves publica e privada
-
-*.key.pub
-*.key.priv
-
 # .env
 
 *.env

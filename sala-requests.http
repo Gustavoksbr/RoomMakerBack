@@ -1,0 +1,64 @@
+@Token = tokenteste
+
+### Listar todas as salas
+GET http://localhost:8080/salas
+Authorization: Bearer {{Token}}
+Content-Type: application/json
+
+
+### Filtrar salas
+@usernameDonoFiltro = teste
+@nomeFiltro = teste
+@categoriaFiltro = teste
+
+GET http://localhost:8080/salas?
+    usernameDono={{usernameDonoFiltro}}&
+    nome={{nomeFiltro}}&
+    categoria={{categoriaFiltro}}
+Authorization: Bearer {{Token}}
+Content-Type: application/json
+
+### Criar sala
+
+POST http://localhost:8080/salas
+Authorization: Bearer {{Token}}
+Content-Type: application/json
+
+{
+  "nome": "",
+  "categoria": "",
+  "senha": "",
+  "qtdCapacidade": 2
+}
+
+### Entrar em uma sala
+@usernameDonoEntrar = teste
+@nomeEntrar = teste
+
+POST http://localhost:8080/salas/{{usernameDonoEntrar}}/{{nomeEntrar}}
+Authorization: Bearer {{Token}}
+Content-Type: application/json
+
+{
+  "senha": ""
+}
+
+
+### Sair de uma sala
+@usernameDonoSair = teste
+@nomeSair = teste
+@usernameParticipanteSair = teste
+
+POST http://localhost:8080/salas/{{usernameDonoSair}}/{{nomeSair}}/{{usernameParticipanteSair}}
+Authorization: Bearer {{Token}}
+Content-Type: application/json
+
+### Deletar uma sala
+@usernameDonoDeletar = teste
+@nomeDeletar = teste
+
+DELETE http://localhost:8080/salas/{{usernameDonoDeletar}}/{{nomeDeletar}}
+Authorization: Bearer {{Token}}
+Content-Type: application/json
+
+

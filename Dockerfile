@@ -1,5 +1,7 @@
-#FROM gradle:7.6.2-jdk17 AS build
-FROM gradle/gradle@sha256:8b031c5d0a51c4a961d7f6c69788d75433285702d7d526e0b74070a2f470a1a1 AS build
+# ---- Build ----
+#FROM gradle:7.6.2-jdk17-alpine AS build
+
+FROM gradle@sha256:8f5dbc642dbd1d6289a8692cfb47296d09939881f63637194ed73d328823d5de AS build
 
 WORKDIR /app
 
@@ -13,8 +15,10 @@ COPY src /app/src
 
 RUN ./gradlew bootJar --no-daemon
 
-#FROM openjdk:17-jre-slim
-FROM openjdk@sha256:1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b AS runtime
+# ---- Runtime ----
+
+#FROM openjdk:17.0.1-jdk-slim AS runtime
+ FROM openjdk@sha256:565d3643a78a657ca03e85c110af9579a07e833d6bcc14f475249c521b5c5d74 AS runtime
 
 WORKDIR /app
 

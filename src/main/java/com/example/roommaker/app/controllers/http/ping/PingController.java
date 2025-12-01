@@ -19,10 +19,10 @@ public class PingController {
 
     private final RestTemplate restTemplate = new RestTemplate();
 
-    // Troque pela URL pública da sua aplicação no Render
-    // http://localhost:8080/testando
+    // http://localhost:8080/ping
+    // https://roommakerback.onrender.com/ping
 
-    private static final String SELF_URL = "https://roommaker-2-7.onrender.com/ping";
+    private static final String SELF_URL = "https://roommakerback.onrender.com/ping";
 
     // A cada 10 minutos (10 * 60 * 1000 ms)
     @Scheduled(fixedRate = 10 * 60 * 1000)

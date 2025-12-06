@@ -1,7 +1,8 @@
 package com.example.roommaker.app.domain.managers.sala;
 
+import com.example.roommaker.app.categorias.CategoriaService;
 import com.example.roommaker.app.domain.models.Sala;
-import com.example.roommaker.app.services.categorias.CategoriaService;
+
 import com.example.roommaker.app.domain.ports.auth.AuthService;
 
 import com.example.roommaker.app.domain.ports.repository.SalaRepository;
@@ -54,6 +55,7 @@ public class SalaManager {
         sala.setUsernameDono(username);
      this.categoriaService.validarSalaParaOJogo(sala);
      Sala salaCriada = this.salaRepository.criar(sala);
+     categoriaService.aposCriacaoDaSala(salaCriada);
      return salaCriada;
     }
 
@@ -89,8 +91,9 @@ public class SalaManager {
         Sala sala = this.salaRepository.mostrarSala(nomeSala, usernameDono);
 
         List<String> ouvintes = new ArrayList<>(sala.getUsernameParticipantes());
+        List listaNula = new ArrayList();
         ouvintes.add(usernameDono);
-        this.webSocketSender.enviarMensagemParaSala(sala.getUsernameDono(),sala.getNome(),"sala",ouvintes,sala.getUsernameParticipantes());
+        this.webSocketSender.enviarMensagemParaSala(sala.getUsernameDono(),sala.getNome(),"sala", ouvintes,listaNula);
 
         this.salaRepository.excluirSala(usernameDono, nomeSala);
         this.categoriaService.excluirJogo(sala);

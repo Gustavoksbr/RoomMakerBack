@@ -147,6 +147,10 @@ public class HttpExceptionController {
                 .status(HttpStatus.UNAUTHORIZED)
                 .body("Erro 401: Token inválido ou chave incompatível.");
     }
+    @ExceptionHandler
+    public ResponseEntity<String> handleTeapotException(com.example.roommaker.app.domain.exceptions.TeapotException ex) {
+        return ResponseEntity.status(418).body(ex.getMessage());
+    }
 
     // ====================================================================================================
     // 500

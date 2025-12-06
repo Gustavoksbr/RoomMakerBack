@@ -41,7 +41,8 @@ public class HttpConfig implements WebMvcConfigurer {
                         "/usuario/esquecisenha",
                         "/usuario/novasenha",
                         "/swagger-ui/",
-                        "/ping"
+                        "/ping",
+                        "/teapot"
                 );
     }
 

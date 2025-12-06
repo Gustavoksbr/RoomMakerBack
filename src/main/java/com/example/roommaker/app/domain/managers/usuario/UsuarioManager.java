@@ -91,7 +91,7 @@ public class UsuarioManager {
     public String capturarUsernameDoToken(String token) {
         String username = authService.getUsername(token);
          if(!this.userRepository.existePorUsername(username)){
-            throw new ErroDeAutenticacaoGeral("Usuario nao encontrado");
+            throw new ErroDeAutenticacaoGeral("Usuario decodificado pelo token nao encontrado");
          }
          return username;
     }

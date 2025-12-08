@@ -49,9 +49,7 @@ public class WhoIsTheImpostorSender  implements WhoIsTheImpostorNotifyPort {
         );
     }
 
-    // ===========================
-    // CRIAÇÃO DAS RESPONSES
-    // ===========================
+
 @Override
     public WhoIsTheImpostorResponse criarResponse(WhoIsTheImpostor jogo, String usuario) {
 

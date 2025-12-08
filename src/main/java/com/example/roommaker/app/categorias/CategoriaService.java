@@ -3,7 +3,6 @@ package com.example.roommaker.app.categorias;
 import com.example.roommaker.app.categorias.examples.whoistheimpostor.domain.WhoIsTheImpostorManager;
 import com.example.roommaker.app.domain.models.Sala;
 import com.example.roommaker.app.domain.exceptions.ErroDeRequisicaoGeral;
-import com.example.roommaker.app.domain.ports.repository.SalaRepository;
 import com.example.roommaker.app.categorias.examples.chat.core.ChatManager;
 import com.example.roommaker.app.categorias.examples.jokenpo.domain.JokenpoManager;
 import com.example.roommaker.app.categorias.examples.tictactoe.domain.TicTacToeManager;
@@ -14,7 +13,7 @@ import java.util.List;
 
 @Service
 public class CategoriaService {
-    private final SalaRepository salaRepository;
+//    private final SalaRepository salaRepository;
     private final TicTacToeManager ticTacToeManager;
     private final JokenpoManager jokenpoManager;
     private final ChatManager chatManager;
@@ -22,17 +21,17 @@ public class CategoriaService {
 //    private final CoupManager coupManager; //futuramente sera adicionado
 
     @Autowired
-    public CategoriaService(SalaRepository salaRepository, TicTacToeManager ticTacToeManager, JokenpoManager jokenpoManager, ChatManager chatManager, WhoIsTheImpostorManager whoIsTheImpostorManager) {
-        this.salaRepository = salaRepository;
+    public CategoriaService( TicTacToeManager ticTacToeManager, JokenpoManager jokenpoManager, ChatManager chatManager, WhoIsTheImpostorManager whoIsTheImpostorManager) {
+//        this.salaRepository = salaRepository;
         this.ticTacToeManager = ticTacToeManager;
         this.jokenpoManager = jokenpoManager;
         this.chatManager = chatManager;
         this.whoIsTheImpostorManager = whoIsTheImpostorManager;
     }
 
-    public void verificarSeUsuarioEstaNoJogo(String usernameParticipante, String usernameDono, String nomeSala) {
-        Sala sala = this.salaRepository.verificarSeUsuarioEstaNaSalaERetornarSala(nomeSala, usernameDono, usernameParticipante);
-    }
+//    public void verificarSeUsuarioEstaNoJogo(String usernameParticipante, String usernameDono, String nomeSala) {
+//        Sala sala = this.salaRepository.verificarSeUsuarioEstaNaSalaERetornarSala(nomeSala, usernameDono, usernameParticipante);
+//    }
 
     public void notificarSaidaDeUsuario(String usernameParticipante, Sala sala) {
         if(sala.getCategoria().equals("tictactoe")){

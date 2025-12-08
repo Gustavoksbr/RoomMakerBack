@@ -3,7 +3,6 @@ package com.example.roommaker.app.domain.managers.sala;
 import com.example.roommaker.app.categorias.CategoriaService;
 import com.example.roommaker.app.domain.models.Sala;
 
-import com.example.roommaker.app.domain.ports.auth.AuthService;
 
 import com.example.roommaker.app.domain.ports.repository.SalaRepository;
 

@@ -51,7 +51,7 @@ public class BrevoEmailService implements EmailService {
                         String.class
                 );
 
-                System.out.println("E-mail enviado com sucesso para " + email.getTo());
+//                System.out.println("E-mail enviado com sucesso para " + email.getTo());
 
             } catch (Exception e) {
                 throw new RuntimeException("Erro ao enviar e-mail via Brevo API", e);

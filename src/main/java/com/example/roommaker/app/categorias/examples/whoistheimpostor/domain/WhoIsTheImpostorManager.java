@@ -3,14 +3,12 @@ package com.example.roommaker.app.categorias.examples.whoistheimpostor.domain;
 import com.example.roommaker.app.categorias.examples.JogoPort;
 import com.example.roommaker.app.categorias.examples.whoistheimpostor.domain.models.WhoIsTheImpostorResponse;
 import com.example.roommaker.app.categorias.examples.whoistheimpostor.sender.WhoIsTheImpostorNotifyPort;
-import com.example.roommaker.app.categorias.examples.whoistheimpostor.sender.WhoIsTheImpostorSender;
 import com.example.roommaker.app.domain.exceptions.ErroDeRequisicaoGeral;
 import com.example.roommaker.app.domain.exceptions.UsuarioNaoAutorizado;
 import com.example.roommaker.app.domain.models.Sala;
 import com.example.roommaker.app.categorias.examples.whoistheimpostor.domain.models.Card;
 import com.example.roommaker.app.categorias.examples.whoistheimpostor.domain.models.WhoIsTheImpostor;
 import com.example.roommaker.app.categorias.examples.whoistheimpostor.repository.WhoIsTheImpostorRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -31,9 +29,6 @@ public class WhoIsTheImpostorManager implements JogoPort {
         this.notifyPort = notifyPort;
     }
 
-    // =====================================================
-    // ✅ COMEÇAR (AGORA ENVIA AQUI)
-    // =====================================================
     public void comecarPartida(Sala sala, String dono) {
 
         validarSala(sala, dono);
@@ -60,7 +55,6 @@ public class WhoIsTheImpostorManager implements JogoPort {
 
         repository.save(whoIsTheImpostor);
 
-        // ✅ ENVIO PARA CADA JOGADOR
         jogadores.forEach(jogador -> {
             WhoIsTheImpostorResponse response =
                     notifyPort.criarResponse(whoIsTheImpostor, jogador);
@@ -74,9 +68,6 @@ public class WhoIsTheImpostorManager implements JogoPort {
         });
     }
 
-    // =====================================================
-    // ✅ TERMINAR (AGORA ENVIA AQUI)
-    // =====================================================
     public void terminarPartida(Sala sala, String dono) {
 
         validarSala(sala, dono);
@@ -97,9 +88,7 @@ public class WhoIsTheImpostorManager implements JogoPort {
         );
     }
 
-    // =====================================================
-    // ✅ MOSTRAR (AGORA ENVIA AQUI)
-    // =====================================================
+
     public void mostrarJogoAtual(Sala sala, String username) {
 
         if (!sala.getCategoria().equals("whoistheimpostor")) {
@@ -122,12 +111,16 @@ public class WhoIsTheImpostorManager implements JogoPort {
         );
     }
 
-    // =====================================================
-    // ✅ SAÍDA DE PARTICIPANTE (AGORA ENVIA)
-    // =====================================================
+
     @Override
     public void saidaDeParticipante(String usernameParticipante, Sala sala) {
-        terminarPartida(sala, sala.getUsernameDono());
+        WhoIsTheImpostor jogo =
+                repository.findByNomeSalaAndUsernameDono(
+                        sala.getNome(), sala.getUsernameDono()
+                );
+        if (jogo.getJogando() && jogo.getJogadores().contains(usernameParticipante)) {
+            terminarPartida(sala, sala.getUsernameDono());
+        }
     }
 
     @Override public void validarSalaParaOJogo(Sala sala) {
@@ -136,9 +129,7 @@ public class WhoIsTheImpostorManager implements JogoPort {
         }
     }
 
-    // =====================================================
-    // ✅ DELETAR JOGO (AGORA ENVIA)
-    // =====================================================
+
     @Override
     public void deletarJogo(Sala sala) {
         WhoIsTheImpostor jogo = zerarJogo(sala);
@@ -161,7 +152,6 @@ public class WhoIsTheImpostorManager implements JogoPort {
         );
     }
 
-    // =====================================================
 
     private void validarSala(Sala sala, String dono) {
         if (!sala.getCategoria().equals("whoistheimpostor")) {

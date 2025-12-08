@@ -1,12 +1,10 @@
 package com.example.roommaker.app.controllers.websocket.filters;
 
 
-import com.example.roommaker.app.domain.models.Sala;
 import com.example.roommaker.app.domain.exceptions.ErroDeAutenticacaoGeral;
 import com.example.roommaker.app.domain.exceptions.UsuarioNaoAutorizado;
 import com.example.roommaker.app.domain.thread.Contexto;
 
-import com.example.roommaker.app.domain.managers.sala.SalaManager;
 import com.example.roommaker.app.domain.managers.usuario.UsuarioManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.Message;
@@ -23,14 +21,16 @@ import java.util.EnumSet;
 @Component
 public class JwtWebsocketInterceptor implements ChannelInterceptor {
     private final UsuarioManager usuarioManager;
-    private final SalaManager salaManager;
+//    private final SalaManager salaManager;
 //    private final SalaSenderWebsocket salaSenderWebsocket;
 
 
     @Autowired
-    public JwtWebsocketInterceptor(UsuarioManager usuarioManager, SalaManager salaManager) {
+    public JwtWebsocketInterceptor(UsuarioManager usuarioManager
+//            , SalaManager salaManager
+    ) {
         this.usuarioManager = usuarioManager;
-        this.salaManager = salaManager;
+//        this.salaManager = salaManager;
     }
 
     /**************************/
@@ -49,7 +49,7 @@ public Message<?> preSend(Message<?> message, MessageChannel channel) {
             throw new ErroDeAutenticacaoGeral("Usuário não autenticado");
         }
         String destination = accessor.getDestination();
-            System.out.println("destination: "+destination);
+//            System.out.println("destination: "+destination);
 
             if (destination != null) {
             if (EnumSet.of(StompCommand.SUBSCRIBE,StompCommand.UNSUBSCRIBE).contains(accessor.getCommand()) && (destination.matches("/topic/sala/[^/]+/[^/]+/[^/]+/[^/]+") )) {

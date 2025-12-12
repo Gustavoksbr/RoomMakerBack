@@ -2,7 +2,9 @@ package com.example.roommaker.app.categorias.examples.whoistheimpostor.domain.mo
 
 import lombok.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -16,4 +18,5 @@ public class WhoIsTheImpostor {
     private List<String> jogadores;
     private String impostor;
     private Card carta;
+    private HashMap<String, String> votosPorvotador;
 }

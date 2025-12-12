@@ -10,15 +10,15 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
-public class WhoIsTheImpostorSender  implements WhoIsTheImpostorNotifyPort {
+public class WhoIsTheImpostorSender {
 
     private final SalaSenderWebsocket salaSenderWebsocket;
 
     @Autowired
-    public WhoIsTheImpostorSender(@Lazy SalaSenderWebsocket salaSenderWebsocket) {
+    public WhoIsTheImpostorSender(SalaSenderWebsocket salaSenderWebsocket) {
         this.salaSenderWebsocket = salaSenderWebsocket;
     }
-    @Override
+
     public void enviarParaUsuario(
             String usernameDono,
             String nomeSala,
@@ -33,7 +33,6 @@ public class WhoIsTheImpostorSender  implements WhoIsTheImpostorNotifyPort {
                 response
         );
     }
-    @Override
     public void enviarParaTodos(
             String usernameDono,
             String nomeSala,
@@ -47,42 +46,5 @@ public class WhoIsTheImpostorSender  implements WhoIsTheImpostorNotifyPort {
                 usuarios,
                 response
         );
-    }
-
-
-@Override
-    public WhoIsTheImpostorResponse criarResponse(WhoIsTheImpostor jogo, String usuario) {
-
-        WhoIsTheImpostorResponse r = new WhoIsTheImpostorResponse();
-
-        if (!jogo.getJogando()) {
-            r.setPartidaSendoJogada(false);
-            r.setImpostorDaPartidaPassada(jogo.getImpostor());
-            r.setCartaDaPartidaPassada(jogo.getCarta());
-            return r;
-        }
-
-        r.setPartidaSendoJogada(true);
-
-        if (!jogo.getJogadores().contains(usuario)) {
-            r.setEstaNaPartida(false);
-            return r;
-        }
-
-        r.setEstaNaPartida(true);
-
-        boolean impostor = jogo.getImpostor().equals(usuario);
-        r.setIsImpostor(impostor);
-        r.setCarta(impostor ? null : jogo.getCarta());
-
-        return r;
-    }
-    @Override
-    public WhoIsTheImpostorResponse criarResponsePartidaFinalizada(WhoIsTheImpostor jogo) {
-        WhoIsTheImpostorResponse r = new WhoIsTheImpostorResponse();
-        r.setPartidaSendoJogada(false);
-        r.setImpostorDaPartidaPassada(jogo.getImpostor());
-        r.setCartaDaPartidaPassada(jogo.getCarta());
-        return r;
     }
 }

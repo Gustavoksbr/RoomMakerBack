@@ -9,7 +9,9 @@ import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -32,6 +34,7 @@ public class WhoIsTheImpostorEntity {
     private List<String> jogadores;
     private String impostor;
     private Card carta;
+    private HashMap<String, String> votosPorvotador;
 
     public WhoIsTheImpostor toDomain(){
         return WhoIsTheImpostor.builder()
@@ -41,6 +44,7 @@ public class WhoIsTheImpostorEntity {
                 .jogadores(this.jogadores)
                 .impostor(this.impostor)
                 .carta(this.carta)
+                .votosPorvotador(this.votosPorvotador)
                 .build();
     }
 
@@ -51,6 +55,7 @@ public class WhoIsTheImpostorEntity {
         this.jogadores = whoIsTheImpostor.getJogadores();
         this.impostor = whoIsTheImpostor.getImpostor();
         this.carta = whoIsTheImpostor.getCarta();
+        this.votosPorvotador = whoIsTheImpostor.getVotosPorvotador();
     }
 
     public static WhoIsTheImpostorEntity fromDomain(WhoIsTheImpostor entity){
@@ -61,6 +66,7 @@ public class WhoIsTheImpostorEntity {
                 .jogadores(entity.getJogadores())
                 .impostor(entity.getImpostor())
                 .carta(entity.getCarta())
+                .votosPorvotador(entity.getVotosPorvotador())
                 .build();
     }
 }

@@ -20,9 +20,7 @@ import java.util.List;
 
 @Service
 public class SalaManager {
-    // injecoes
 
-//    private final AuthService authService;
     private final SalaRepository salaRepository;
     private final SalaSenderWebsocket webSocketSender;
     private final UsuarioManager usuarioManager;
@@ -30,7 +28,6 @@ public class SalaManager {
 
     @Autowired
     public SalaManager(SalaRepository salaRepository, UsuarioManager usuarioManager ,@Lazy SalaSenderWebsocket webSocketSender, CategoriaService categoriaService) {
-//        this.authService = authService;
         this.salaRepository = salaRepository;
         this.usuarioManager = usuarioManager;
         this.categoriaService = categoriaService;
@@ -110,7 +107,6 @@ public class SalaManager {
             if(!username.equals(usernameSaindo)){ // e não está saindo da sala
                 throw new UsuarioNaoAutorizado("Você não pode expulsar alguém da sala, se você não é o dono da sala!");
             }
-
         }
         Sala sala = this.salaRepository.sairDaSala(usernameDono, nomeSala, usernameSaindo);
         this.categoriaService.notificarSaidaDeUsuario(usernameSaindo, sala);

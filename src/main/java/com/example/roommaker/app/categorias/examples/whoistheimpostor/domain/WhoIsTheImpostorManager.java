@@ -38,6 +38,14 @@ public class WhoIsTheImpostorManager implements JogoPort {
         Sala sala = salaManager.mostrarSala(nomeSala, usernameDono);
         validarSala(sala, username);
 
+        WhoIsTheImpostor whoIsTheImpostorExistente =
+                repository.findByNomeSalaAndUsernameDono(
+                        sala.getNome(), sala.getUsernameDono()
+                );
+        if (whoIsTheImpostorExistente != null && whoIsTheImpostorExistente.getJogando()) {
+            throw new ErroDeRequisicaoGeral("Partida já está em andamento");
+        }
+
         WhoIsTheImpostor jogo = new WhoIsTheImpostor();
         jogo.setNomeSala(sala.getNome());
         jogo.setUsernameDono(sala.getUsernameDono());
@@ -103,7 +111,7 @@ public class WhoIsTheImpostorManager implements JogoPort {
     }
 
 
-    public void mostrarJogoAtual(String nomeSala, String usernameDono, String username) {
+    public WhoIsTheImpostorResponse mostrarJogoAtual(String nomeSala, String usernameDono, String username) {
 
         Sala sala = salaManager.verificarSeUsuarioEstaNaSalaERetornarSala(
                 nomeSala, usernameDono, username
@@ -123,12 +131,13 @@ public class WhoIsTheImpostorManager implements JogoPort {
                         jogo.getVotosPorvotador().getOrDefault(username, "")
                 );
 
-        whoIsTheImpostorSender.enviarParaUsuario(
-                sala.getUsernameDono(),
-                sala.getNome(),
-                username,
-                response
-        );
+//        whoIsTheImpostorSender.enviarParaUsuario(
+//                sala.getUsernameDono(),
+//                sala.getNome(),
+//                username,
+//                response
+//        );
+        return response;
     }
 
     public void votar(String nomeSala, String usernameDono, String username, String usernameVotado) {

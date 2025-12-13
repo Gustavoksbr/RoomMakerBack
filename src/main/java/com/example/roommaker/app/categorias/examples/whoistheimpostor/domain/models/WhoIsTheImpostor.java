@@ -18,5 +18,5 @@ public class WhoIsTheImpostor {
     private List<String> jogadores;
     private String impostor;
     private Card carta;
-    private HashMap<String, String> votosPorvotador;
+    private HashMap<String, String> votosPorvotador = new HashMap<>();
 }

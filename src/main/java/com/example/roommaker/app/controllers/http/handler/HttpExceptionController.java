@@ -2,8 +2,6 @@ package com.example.roommaker.app.controllers.http.handler;
 
 
 import com.example.roommaker.app.domain.exceptions.*;
-import com.example.roommaker.app.domain.exceptions.ErroDeRequisicaoGeral;
-import com.example.roommaker.app.domain.exceptions.UsuarioNaoAutorizado;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.security.SignatureException;
@@ -13,6 +11,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.oauth2.jwt.BadJwtException;
 import org.springframework.security.oauth2.jwt.JwtValidationException;
 import org.springframework.validation.FieldError;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -147,9 +146,14 @@ public class HttpExceptionController {
                 .status(HttpStatus.UNAUTHORIZED)
                 .body("Erro 401: Token inválido ou chave incompatível.");
     }
+
     @ExceptionHandler
-    public ResponseEntity<String> handleTeapotException(com.example.roommaker.app.domain.exceptions.TeapotException ex) {
+    public ResponseEntity<String> handleTeapotException(TeapotException ex) {
         return ResponseEntity.status(418).body(ex.getMessage());
+    }
+    @ExceptionHandler({HttpRequestMethodNotSupportedException.class})
+    public ResponseEntity<String> handleMethodNotAllowed(HttpRequestMethodNotSupportedException ex) {
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body("Erro 405: Método HTTP não permitido para este endpoint.");
     }
 
     // ====================================================================================================

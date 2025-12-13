@@ -2,11 +2,11 @@ package com.example.roommaker.app.controllers.websocket.sala;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.stereotype.Controller;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-@Controller
+@Service
 public class SalaSenderWebsocket {
     private final SimpMessagingTemplate messagingTemplate;
     @Autowired

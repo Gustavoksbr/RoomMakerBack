@@ -41,7 +41,6 @@ public class WhoIsTheImpostorManagerTest {
     @Mock
     private SalaManager salaManager;
 
-    // A classe que queremos testar, com as dependências mockadas injetadas
     @InjectMocks
     private WhoIsTheImpostorManager manager;
 
@@ -60,10 +59,6 @@ public class WhoIsTheImpostorManagerTest {
 
     private Sala criarSalaValida(List<String> participantes) {
         Sala sala = new Sala();
-        // Os atributos são privados na Sala, vou assumir que há setters ou construtor
-        // Para este teste, vamos simular o comportamento que a WhoIsTheImpostorManager espera.
-        // Como não temos os setters/getters da classe Sala, assumo que os campos são acessíveis para simplificação no teste.
-        // Na prática, você usaria os métodos da classe Sala para preencher.
         sala.setNome(NOME_SALA);
         sala.setUsernameDono(DONO);
         sala.setCategoria("whoistheimpostor");

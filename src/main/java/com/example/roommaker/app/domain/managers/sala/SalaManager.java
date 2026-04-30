@@ -3,7 +3,6 @@ package com.example.roommaker.app.domain.managers.sala;
 import com.example.roommaker.app.categorias.CategoriaService;
 import com.example.roommaker.app.domain.models.Sala;
 
-
 import com.example.roommaker.app.domain.ports.repository.SalaRepository;
 
 import com.example.roommaker.app.domain.exceptions.ErroDeRequisicaoGeral;
@@ -27,7 +26,8 @@ public class SalaManager {
     private final CategoriaService categoriaService;
 
     @Autowired
-    public SalaManager(SalaRepository salaRepository, UsuarioManager usuarioManager ,@Lazy SalaSenderWebsocket webSocketSender, CategoriaService categoriaService) {
+    public SalaManager(SalaRepository salaRepository, UsuarioManager usuarioManager,
+            @Lazy SalaSenderWebsocket webSocketSender, CategoriaService categoriaService) {
         this.salaRepository = salaRepository;
         this.usuarioManager = usuarioManager;
         this.categoriaService = categoriaService;
@@ -43,45 +43,48 @@ public class SalaManager {
     }
 
     public List<Sala> listarPorDono(String usernameDono) {
-        return  this.salaRepository.listarPorDono(usernameDono);
+        return this.salaRepository.listarPorDono(usernameDono);
     }
 
     @Transactional
     public Sala criar(Sala sala, String username) {
         sala.setUsernameDono(username);
-     this.categoriaService.validarSalaParaOJogo(sala);
-     Sala salaCriada = this.salaRepository.criar(sala);
-     categoriaService.aposCriacaoDaSala(salaCriada);
-     return salaCriada;
+        this.categoriaService.validarSalaParaOJogo(sala);
+        Sala salaCriada = this.salaRepository.criar(sala);
+        categoriaService.aposCriacaoDaSala(salaCriada);
+        return salaCriada;
     }
-
 
     public Sala mostrarSala(String nomeSala, String usernameDono) {
         return this.salaRepository.mostrarSala(nomeSala, usernameDono);
     }
 
     @Transactional
-   public Sala autenticarParticipante(String nomesala, String usernameDono, String senha, String usernameParticipante) {
-       this.usuarioManager.encontrarUsername(usernameDono); // unica funcao eh garantir que o dono existe
-        if(usernameParticipante.equals(usernameDono)){
+    public Sala autenticarParticipante(String nomesala, String usernameDono, String senha,
+            String usernameParticipante) {
+        this.usuarioManager.encontrarUsername(usernameDono); // unica funcao eh garantir que o dono existe
+        if (usernameParticipante.equals(usernameDono)) {
             throw new ErroDeRequisicaoGeral("Você já está na sala!");
         }
-       Sala sala = salaRepository.adicionarParticipante(nomesala, usernameDono, senha, usernameParticipante);
+        Sala sala = salaRepository.adicionarParticipante(nomesala, usernameDono, senha, usernameParticipante);
         this.categoriaService.adicionarJogador(usernameParticipante, sala);
 
-       List<String> ouvintes = new ArrayList<>(sala.getUsernameParticipantes());
-       ouvintes.add(usernameDono);
-        this.webSocketSender.enviarMensagemParaSala(sala.getUsernameDono(),sala.getNome(),"sala",ouvintes,sala.getUsernameParticipantes());
+        List<String> ouvintes = new ArrayList<>(sala.getUsernameParticipantes());
+        ouvintes.add(usernameDono);
+        this.webSocketSender.enviarMensagemParaSala(sala.getUsernameDono(), sala.getNome(), "sala", ouvintes,
+                sala.getUsernameParticipantes());
         return sala;
-   }
+    }
 
-    public Sala verificarSeUsuarioEstaNaSalaERetornarSala(String nomeSala, String usernameDono, String usernameParticipante) {
-        return this.salaRepository.verificarSeUsuarioEstaNaSalaERetornarSala(nomeSala, usernameDono, usernameParticipante);
+    public Sala verificarSeUsuarioEstaNaSalaERetornarSala(String nomeSala, String usernameDono,
+            String usernameParticipante) {
+        return this.salaRepository.verificarSeUsuarioEstaNaSalaERetornarSala(nomeSala, usernameDono,
+                usernameParticipante);
     }
 
     @Transactional
     public void excluirSala(String usernameDono, String nomeSala, String username) {
-        if(!usernameDono.equals(username)){
+        if (!usernameDono.equals(username)) {
             throw new UsuarioNaoAutorizado("Você não pode excluir sem ser o dono da sala!");
         }
         Sala sala = this.salaRepository.mostrarSala(nomeSala, usernameDono);
@@ -89,7 +92,8 @@ public class SalaManager {
         List<String> ouvintes = new ArrayList<>(sala.getUsernameParticipantes());
         List listaNula = new ArrayList();
         ouvintes.add(usernameDono);
-        this.webSocketSender.enviarMensagemParaSala(sala.getUsernameDono(),sala.getNome(),"sala", ouvintes,listaNula);
+        this.webSocketSender.enviarMensagemParaSala(sala.getUsernameDono(), sala.getNome(), "sala", ouvintes,
+                listaNula);
 
         this.salaRepository.excluirSala(usernameDono, nomeSala);
         this.categoriaService.excluirJogo(sala);
@@ -98,23 +102,42 @@ public class SalaManager {
     @Transactional
     public Sala sairDaSala(String usernameDono, String nomeSala, String usernameSaindo, String username) {
 
-        if(username.equals(usernameDono)){ // se você é o dono da sala
-            if(usernameDono.equals(usernameSaindo)){  // e está saindo da sala
+        if (username.equals(usernameDono)) { // se você é o dono da sala
+            if (usernameDono.equals(usernameSaindo)) { // e está saindo da sala
                 throw new ErroDeRequisicaoGeral("O dono da sala não pode sair da sala!");
             }
-        }
-        else { // se você não é o dono da sala
-            if(!username.equals(usernameSaindo)){ // e não está saindo da sala
+        } else { // se você não é o dono da sala
+            if (!username.equals(usernameSaindo)) { // e não está saindo da sala
                 throw new UsuarioNaoAutorizado("Você não pode expulsar alguém da sala, se você não é o dono da sala!");
             }
         }
         Sala sala = this.salaRepository.sairDaSala(usernameDono, nomeSala, usernameSaindo);
         this.categoriaService.notificarSaidaDeUsuario(usernameSaindo, sala);
 
-       List<String> ouvintes = new ArrayList<>(sala.getUsernameParticipantes());
+        List<String> ouvintes = new ArrayList<>(sala.getUsernameParticipantes());
         ouvintes.add(usernameDono);
         ouvintes.add(usernameSaindo);
-        this.webSocketSender.enviarMensagemParaSala(sala.getUsernameDono(),sala.getNome(),"sala",ouvintes,sala.getUsernameParticipantes());
+        this.webSocketSender.enviarMensagemParaSala(sala.getUsernameDono(), sala.getNome(), "sala", ouvintes,
+                sala.getUsernameParticipantes());
         return sala;
+    }
+
+    @Transactional
+    public Sala alterarCapacidade(String usernameDono, String nomeSala, Long novaCapacidade, String username) {
+        if (!usernameDono.equals(username)) {
+            throw new UsuarioNaoAutorizado("Apenas o dono da sala pode alterar a capacidade!");
+        }
+        Sala sala = this.salaRepository.mostrarSala(nomeSala, usernameDono);
+        this.categoriaService.validarAlteracaoDeCapacidade(sala, novaCapacidade);
+
+        // +1 para incluir o dono
+        int totalAtual = sala.getUsernameParticipantes().size() + 1;
+        if (novaCapacidade != null && novaCapacidade < totalAtual) {
+            throw new ErroDeRequisicaoGeral(
+                    "A nova capacidade (" + novaCapacidade + ") é menor que o número atual de pessoas na sala ("
+                            + totalAtual + "). Expulse alguns jogadores antes de reduzir a capacidade.");
+        }
+
+        return this.salaRepository.alterarCapacidade(usernameDono, nomeSala, novaCapacidade);
     }
 }

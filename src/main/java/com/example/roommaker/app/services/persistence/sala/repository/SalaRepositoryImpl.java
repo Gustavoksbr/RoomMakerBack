@@ -19,26 +19,29 @@ public class SalaRepositoryImpl implements SalaRepository {
     @Autowired
     MongoSalaRepository mongoSalaRepository;
 
-    //metodos privados
+    // metodos privados
 
     private SalaEntity entityFindByNomeAndUsernameDono(String nome, String usernameDono) {
-        return this.mongoSalaRepository.findByNomeAndUsernameDono(nome,usernameDono).orElseThrow(() -> new SalaNaoEncontrada(nome, usernameDono));
+        return this.mongoSalaRepository.findByNomeAndUsernameDono(nome, usernameDono)
+                .orElseThrow(() -> new SalaNaoEncontrada(nome, usernameDono));
     }
 
     @Override
     public List<Sala> listar(String usernameDono, String nomeSala, String categoria) {
 
-        return this.mongoSalaRepository.findByUsernameDonoAndNomeAndCategoriaSubstring(usernameDono, nomeSala, categoria).stream()
+        return this.mongoSalaRepository
+                .findByUsernameDonoAndNomeAndCategoriaSubstring(usernameDono, nomeSala, categoria).stream()
                 .map(SalaEntity::toSala)
                 .toList();
     }
 
     @Override
     public List<Sala> listarPorParticipante(String usernameParticipante) {
-        return this.mongoSalaRepository.findByParticipante(usernameParticipante).stream().map(SalaEntity::toSala).toList();
+        return this.mongoSalaRepository.findByParticipante(usernameParticipante).stream().map(SalaEntity::toSala)
+                .toList();
     }
 
-    public List<Sala> listarPorDono(String usernameDono){
+    public List<Sala> listarPorDono(String usernameDono) {
         return this.mongoSalaRepository.findByUsernameDono(usernameDono).stream().map(SalaEntity::toSala).toList();
     }
 
@@ -47,7 +50,8 @@ public class SalaRepositoryImpl implements SalaRepository {
         try {
             return this.mongoSalaRepository.save(new SalaEntity(sala)).toSala();
         } catch (DataIntegrityViolationException e) {
-            throw new Erro409("Já existe uma sala chamada '"+sala.getNome()+"' para o dono "+sala.getUsernameDono());
+            throw new Erro409(
+                    "Já existe uma sala chamada '" + sala.getNome() + "' para o dono " + sala.getUsernameDono());
         }
     }
 
@@ -56,41 +60,46 @@ public class SalaRepositoryImpl implements SalaRepository {
         return this.entityFindByNomeAndUsernameDono(nomeSala, usernameDono).toSala();
     }
 
-
     @Override
-    public Sala
-    adicionarParticipante(String nomeSala, String usernameDono, String senha, String usernameParticipante) {
+    public Sala adicionarParticipante(String nomeSala, String usernameDono, String senha, String usernameParticipante) {
         SalaEntity salaEntity = this.entityFindByNomeAndUsernameDono(nomeSala, usernameDono);
 
-        if(salaEntity.getUsernameParticipantes().contains(usernameParticipante)){
+        if (salaEntity.getUsernameParticipantes().contains(usernameParticipante)) {
             throw new ErroDeRequisicaoGeral("Você já está na sala!");
         }
-        if(salaEntity.getUsernameParticipantes().size() + 1 >= salaEntity.getQtdCapacidade()){ // + 1 pq inclui o dono
+        // null = capacidade infinita
+        if (salaEntity.getQtdCapacidade() != null
+                && salaEntity.getUsernameParticipantes().size() + 1 >= salaEntity.getQtdCapacidade()) { // + 1 pq inclui
+                                                                                                        // o dono
             throw new ErroDeRequisicaoGeral("Sala cheia!");
         }
-        if(!salaEntity.getDisponivel()){
+        if (!salaEntity.getDisponivel()) {
             throw new ErroDeRequisicaoGeral("Sala fechada!");
         }
-        if(!(salaEntity.getSenha()==null || salaEntity.getSenha().isEmpty())){ // se tem senha. Se nao tiver, nao precisa verificar e pode adicionar
-            if(!salaEntity.getSenha().equals(senha)){
+        if (!(salaEntity.getSenha() == null || salaEntity.getSenha().isEmpty())) { // se tem senha. Se nao tiver, nao
+                                                                                   // precisa verificar e pode adicionar
+            if (!salaEntity.getSenha().equals(senha)) {
                 throw new UsuarioNaoAutorizado("Senha incorreta!");
-        }}
+            }
+        }
 
         salaEntity.addParticipante(usernameParticipante);
         return mongoSalaRepository.save(salaEntity).toSala();
     }
 
     @Override
-    public Sala verificarSeUsuarioEstaNaSalaERetornarSala(String nomeSala, String usernameDono, String usernameParticipante) {
+    public Sala verificarSeUsuarioEstaNaSalaERetornarSala(String nomeSala, String usernameDono,
+            String usernameParticipante) {
         SalaEntity salaEntity = this.entityFindByNomeAndUsernameDono(nomeSala, usernameDono);
-        if(!salaEntity.getUsernameParticipantes().contains(usernameParticipante) && !salaEntity.getUsernameDono().equals(usernameParticipante)){
+        if (!salaEntity.getUsernameParticipantes().contains(usernameParticipante)
+                && !salaEntity.getUsernameDono().equals(usernameParticipante)) {
             throw new ErroDeRequisicaoGeral("Usuário não está na sala!");
         }
         return salaEntity.toSala();
     }
 
     @Override
-    public void excluirSala(String usernameDono,String nomeSala ) {
+    public void excluirSala(String usernameDono, String nomeSala) {
         SalaEntity salaEntity = this.entityFindByNomeAndUsernameDono(nomeSala, usernameDono);
         this.mongoSalaRepository.delete(salaEntity);
     }
@@ -101,6 +110,13 @@ public class SalaRepositoryImpl implements SalaRepository {
         salaEntity.removeParticipante(usernameSaindo);
         this.mongoSalaRepository.save(salaEntity);
         return salaEntity.toSala();
+    }
+
+    @Override
+    public Sala alterarCapacidade(String usernameDono, String nomeSala, Long novaCapacidade) {
+        SalaEntity salaEntity = this.entityFindByNomeAndUsernameDono(nomeSala, usernameDono);
+        salaEntity.setQtdCapacidade(novaCapacidade);
+        return this.mongoSalaRepository.save(salaEntity).toSala();
     }
 
 }

@@ -20,9 +20,9 @@ public class SalaRequest {
     @Pattern(regexp = "^[a-zA-Z0-9]+$")
     private String categoria;
     private String senha;
-    @Min(2)
-    @Max(1000)
+    // null = sem limite (infinito)
     private Long qtdCapacidade;
+
     public Sala toDomain() {
         return Sala.builder()
                 .nome(this.nome)

@@ -1,6 +1,5 @@
 package com.example.roommaker.app.domain.managers.usuario;
 
-
 import com.example.roommaker.app.domain.models.JwtResponse;
 import com.example.roommaker.app.domain.models.Response;
 import com.example.roommaker.app.domain.models.Usuario;
@@ -29,51 +28,64 @@ public class UsuarioManager {
         this.authService = authService;
     }
 
-// variaveis e metodos privados
+    // variaveis e metodos privados
 
     private Usuario matches(Usuario usuario) {
         Usuario usuarioEncontrado = this.userRepository.encontrarUsernameDoUsuarioAtual(usuario.getUsername());
         authService.matches(usuario.getPassword(), usuarioEncontrado.getPassword());
         return usuarioEncontrado;
     }
+
     private Usuario matchesThrow404(Usuario usuario) {
-        Usuario usuarioEncontrado = this.userRepository.encontrarUsernameDeOutroUsuario(usuario.getUsername()); // se nao encontrar, erro 404
-        authService.matches(usuario.getPassword(), usuarioEncontrado.getPassword()); // usuario.getPassword() eh a senha que o usuario digitou e usuarioEncontrado.getPassword() eh a senha criptografada que esta no banco de dados. Se nao forem compativeis, erro 401
+        Usuario usuarioEncontrado = this.userRepository.encontrarUsernameDeOutroUsuario(usuario.getUsername()); // se
+                                                                                                                // nao
+                                                                                                                // encontrar,
+                                                                                                                // erro
+                                                                                                                // 404
+        authService.matches(usuario.getPassword(), usuarioEncontrado.getPassword()); // usuario.getPassword() eh a senha
+                                                                                     // que o usuario digitou e
+                                                                                     // usuarioEncontrado.getPassword()
+                                                                                     // eh a senha criptografada que
+                                                                                     // esta no banco de dados. Se nao
+                                                                                     // forem compativeis, erro 401
         return usuarioEncontrado;
     }
 
-// implementacoes
+    // implementacoes
     public List<Usuario> listarUsuarios(String substring) {
         List<Usuario> lista;
         if (!substring.isEmpty()) {
             lista = this.userRepository.listarComSubstring(substring);
-        }
-        else{
+        } else {
             lista = this.userRepository.listar();
         }
         return lista;
     }
-    public String createUser(Usuario usuario)  {
-        String senhaCriptografada = this.authService.encode(usuario.getPassword());Usuario usuarioParaSalvar = Usuario.builder()
-            .username(usuario.getUsername())
-            .password(senhaCriptografada)
-            .descricao(usuario.getDescricao())
-            .email(usuario.getEmail())
-            .ativo(true)
-            .doisFatores(false)
-            .dataNascimento(usuario.getDataNascimento())
-            .build();
-     this.userRepository.criar(usuarioParaSalvar);
+
+    public String createUser(Usuario usuario) {
+        String senhaCriptografada = this.authService.encode(usuario.getPassword());
+        Usuario usuarioParaSalvar = Usuario.builder()
+                .username(usuario.getUsername())
+                .password(senhaCriptografada)
+                .descricao(usuario.getDescricao())
+                .email(usuario.getEmail())
+                .ativo(true)
+                .doisFatores(false)
+                .dataNascimento(usuario.getDataNascimento())
+                .build();
+        this.userRepository.criar(usuarioParaSalvar);
         return authService.generateToken(usuario.getUsername());
     }
+
     public Response authenticate(Usuario usuario) {
-       Usuario usuarioEncontrado = this.matchesThrow404(usuario); //verifica se a senha esta correta
-            if (usuarioEncontrado.getDoisFatores()) { //verifica se o usuario tem 2fa ativado
-               this.authService.sendVerificationCode(usuarioEncontrado.getEmail(), usuarioEncontrado.getUsername());
-                return new UsuarioBasicAuth(usuarioEncontrado.getUsername());
-            }
-            return new JwtResponse(authService.generateToken(usuarioEncontrado.getUsername())) ;
+        Usuario usuarioEncontrado = this.matchesThrow404(usuario); // verifica se a senha esta correta
+        if (usuarioEncontrado.getDoisFatores()) { // verifica se o usuario tem 2fa ativado
+            this.authService.sendVerificationCode(usuarioEncontrado.getEmail(), usuarioEncontrado.getUsername());
+            return new UsuarioBasicAuth(usuarioEncontrado.getUsername());
+        }
+        return new JwtResponse(authService.generateToken(usuarioEncontrado.getUsername()));
     }
+
     public String authenticate2fa(Usuario usuario, String codigo) {
         userRepository.encontrarPorEmail(usuario.getEmail());
         return authService.validarCodigo(usuario.getUsername(), codigo);
@@ -87,14 +99,14 @@ public class UsuarioManager {
         return usuario.getDoisFatores();
     }
 
-
     public String capturarUsernameDoToken(String token) {
         String username = authService.getUsername(token);
-         if(!this.userRepository.existePorUsername(username)){
+        if (!this.userRepository.existePorUsername(username)) {
             throw new ErroDeAutenticacaoGeral("Usuario decodificado pelo token nao encontrado");
-         }
-         return username;
+        }
+        return username;
     }
+
     public Usuario encontrarUsername(String username) {
         return this.userRepository.encontrarUsernameDeOutroUsuario(username);
     }
@@ -112,7 +124,15 @@ public class UsuarioManager {
         return jwt;
     }
 
-    public LocalDate getDataNascimento(String username){
+    public LocalDate getDataNascimento(String username) {
         return this.userRepository.getDataNascimento(username);
     }
+
+    // [CANCELADO] alterarUsername - username é usado como chave em todas as
+    // coleções do MongoDB,
+    // atualizar exigiria cascade update manual em salas, chats, jogos, etc.
+    // public String alterarUsername(String usernameAtual, String novoUsername) {
+    // this.userRepository.alterarUsername(usernameAtual, novoUsername);
+    // return authService.generateToken(novoUsername);
+    // }
 }

@@ -24,4 +24,8 @@ public interface SalaRepository {
     Sala sairDaSala(String usernameDono, String nomeSala, String usernameSaindo);
 
     Sala alterarCapacidade(String usernameDono, String nomeSala, Long novaCapacidade);
+
+    String verSenha(String usernameDono, String nomeSala);
+
+    Sala alterarSenha(String usernameDono, String nomeSala, String novaSenha);
 }

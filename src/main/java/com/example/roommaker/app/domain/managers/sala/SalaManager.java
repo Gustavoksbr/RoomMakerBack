@@ -140,4 +140,19 @@ public class SalaManager {
 
         return this.salaRepository.alterarCapacidade(usernameDono, nomeSala, novaCapacidade);
     }
+
+    public String verSenha(String usernameDono, String nomeSala, String username) {
+        if (!usernameDono.equals(username)) {
+            throw new UsuarioNaoAutorizado("Apenas o dono da sala pode ver a senha!");
+        }
+        return this.salaRepository.verSenha(usernameDono, nomeSala);
+    }
+
+    @Transactional
+    public Sala alterarSenha(String usernameDono, String nomeSala, String novaSenha, String username) {
+        if (!usernameDono.equals(username)) {
+            throw new UsuarioNaoAutorizado("Apenas o dono da sala pode alterar a senha!");
+        }
+        return this.salaRepository.alterarSenha(usernameDono, nomeSala, novaSenha);
+    }
 }

@@ -1,6 +1,7 @@
 package com.example.roommaker.app.controllers.http.sala;
 
 import com.example.roommaker.app.controllers.http.sala.dtos.AlterarCapacidadeRequest;
+import com.example.roommaker.app.controllers.http.sala.dtos.AlterarSenhaRequest;
 import com.example.roommaker.app.controllers.http.sala.dtos.EntrarSalaPorSenha;
 import com.example.roommaker.app.controllers.http.sala.dtos.SalaRequest;
 import com.example.roommaker.app.controllers.http.sala.dtos.SalaResponse;
@@ -104,6 +105,29 @@ public class SalaControllerHttp {
             HttpServletRequest request) {
         String username = request.getAttribute("username").toString();
         Sala sala = this.salaManager.alterarCapacidade(usernameDono, nomeSala, body.getQtdCapacidade(), username);
+        return ResponseEntity.ok(new SalaResponse(sala));
+    }
+
+    @GetMapping("/{usernameDono}/{nomeSala}/senha")
+    public ResponseEntity<String> verSenha(
+            @PathVariable String usernameDono,
+            @PathVariable String nomeSala,
+            HttpServletRequest request) {
+        String username = request.getAttribute("username").toString();
+        String senha = this.salaManager.verSenha(usernameDono, nomeSala, username);
+        return ResponseEntity.ok(senha != null ? senha : "");
+    }
+
+    @PatchMapping("/{usernameDono}/{nomeSala}/senha")
+    public ResponseEntity<SalaResponse> alterarSenha(
+            @PathVariable String usernameDono,
+            @PathVariable String nomeSala,
+            @RequestBody AlterarSenhaRequest body,
+            HttpServletRequest request) {
+        String username = request.getAttribute("username").toString();
+        // senha vazia ou null = sala pública
+        String novaSenha = (body.getSenha() == null || body.getSenha().isBlank()) ? null : body.getSenha();
+        Sala sala = this.salaManager.alterarSenha(usernameDono, nomeSala, novaSenha, username);
         return ResponseEntity.ok(new SalaResponse(sala));
     }
 }

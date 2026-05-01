@@ -119,4 +119,17 @@ public class SalaRepositoryImpl implements SalaRepository {
         return this.mongoSalaRepository.save(salaEntity).toSala();
     }
 
+    @Override
+    public String verSenha(String usernameDono, String nomeSala) {
+        SalaEntity salaEntity = this.entityFindByNomeAndUsernameDono(nomeSala, usernameDono);
+        return salaEntity.getSenha(); // pode ser null se sala pública
+    }
+
+    @Override
+    public Sala alterarSenha(String usernameDono, String nomeSala, String novaSenha) {
+        SalaEntity salaEntity = this.entityFindByNomeAndUsernameDono(nomeSala, usernameDono);
+        salaEntity.setSenha(novaSenha);
+        return this.mongoSalaRepository.save(salaEntity).toSala();
+    }
+
 }

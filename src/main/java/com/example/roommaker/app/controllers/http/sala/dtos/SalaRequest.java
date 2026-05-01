@@ -20,7 +20,9 @@ public class SalaRequest {
     @Pattern(regexp = "^[a-zA-Z0-9]+$")
     private String categoria;
     private String senha;
-    // null = sem limite (infinito)
+    // null = sem limite (infinito), max = 99999
+    @Max(value = 99999, message = "Capacidade máxima permitida é 99999")
+    @Min(value = 2, message = "Capacidade mínima é 2")
     private Long qtdCapacidade;
 
     public Sala toDomain() {

@@ -59,8 +59,6 @@ public class CategoriaService {
             this.jokenpoManager.validarSalaParaOJogo(sala);
         } else if (sala.getCategoria().equals("whoistheimpostor")) {
             this.whoIsTheImpostorManager.validarSalaParaOJogo(sala);
-        } else if (sala.getQtdCapacidade() != null && (sala.getQtdCapacidade() < 2 || sala.getQtdCapacidade() > 1000)) {
-            throw new ErroDeRequisicaoGeral("Quantidade de participantes deve ser entre 2 a 1000");
         }
     }
 

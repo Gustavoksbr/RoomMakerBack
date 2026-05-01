@@ -1,8 +1,6 @@
 package com.example.roommaker.app.controllers.websocket.handler;
 
 import com.example.roommaker.app.domain.exceptions.*;
-import com.example.roommaker.app.domain.exceptions.ErroDeRequisicaoGeral;
-import com.example.roommaker.app.domain.exceptions.UsuarioNaoAutorizado;
 import com.example.roommaker.app.domain.thread.Contexto;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
@@ -14,88 +12,93 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.oauth2.jwt.BadJwtException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 
-
 @ControllerAdvice
 public class WebsocketExceptionController {
+
     private final SimpMessagingTemplate messagingTemplate;
+
     @Autowired
     public WebsocketExceptionController(SimpMessagingTemplate messagingTemplate) {
         this.messagingTemplate = messagingTemplate;
     }
+
+    // envia ErrorMensagem para o tópico pessoal do usuário: /topic/{username}/erro
+    private void enviarErro(String mensagem, String status) {
+        String username = Contexto.getUsername();
+        if (username != null) {
+            this.messagingTemplate.convertAndSend(
+                    "/topic/" + username + "/erro",
+                    new ErrorMensagem(mensagem, status));
+        }
+    }
+
     @MessageExceptionHandler(ErroDeRequisicaoGeral.class)
-    public ErrorMensagem handleErroDeRequisicaoGeral(ErroDeRequisicaoGeral ex) {
-        return new ErrorMensagem("mamamia: "+ex.getMessage(),"400") ;
+    public void handleErroDeRequisicaoGeral(ErroDeRequisicaoGeral ex) {
+        enviarErro(ex.getMessage(), "400");
     }
 
     @MessageExceptionHandler(UsuarioNaoAutorizado.class)
     public void handleUsuarioNaoAutorizado(UsuarioNaoAutorizado ex) {
-        String username = Contexto.getUsername();
-        if (username != null) {
-            this.messagingTemplate.convertAndSend("/topic/" + username, ex);
-        }
+        enviarErro(ex.getMessage(), "403");
     }
 
-
     @MessageExceptionHandler(MessageConversionException.class)
-    public String handleMessageConversionException(MessageConversionException ex) {
-        return ex.getMessage();
+    public void handleMessageConversionException(MessageConversionException ex) {
+        enviarErro("Corpo da mensagem inválido.", "400");
     }
 
     @MessageExceptionHandler(UsernameAlreadyExistsException.class)
-    public String handleUsernameAlreadyExistsException(UsernameAlreadyExistsException ex) {
-        return ex.getMessage();
+    public void handleUsernameAlreadyExistsException(UsernameAlreadyExistsException ex) {
+        enviarErro(ex.getMessage(), "409");
     }
 
     @MessageExceptionHandler(UsuarioNaoEncontrado.class)
-    public String handleUsuarioNaoEncontrado(UsuarioNaoEncontrado ex) {
-        return ex.getMessage();
+    public void handleUsuarioNaoEncontrado(UsuarioNaoEncontrado ex) {
+        enviarErro(ex.getMessage(), "404");
     }
 
     @MessageExceptionHandler(SalaJaExiste.class)
-    public String handleSalaJaExiste(SalaJaExiste ex) {
-        return ex.getMessage();
+    public void handleSalaJaExiste(SalaJaExiste ex) {
+        enviarErro(ex.getMessage(), "409");
     }
 
     @MessageExceptionHandler(SalaNaoEncontrada.class)
-    public String handleSalaNaoEncontrada(SalaNaoEncontrada ex) {
-        return ex.getMessage();
+    public void handleSalaNaoEncontrada(SalaNaoEncontrada ex) {
+        enviarErro(ex.getMessage(), "404");
     }
 
     @MessageExceptionHandler(SenhaIncorretaException.class)
-    public String handleSenhaIncorretaException(SenhaIncorretaException ex) {
-        return ex.getMessage();
+    public void handleSenhaIncorretaException(SenhaIncorretaException ex) {
+        enviarErro(ex.getMessage(), "401");
     }
 
     @MessageExceptionHandler(ExpiredJwtException.class)
-    public String handleExpiredJwtException(ExpiredJwtException ex) {
-        return "Erro 401: Token expirado.";
+    public void handleExpiredJwtException(ExpiredJwtException ex) {
+        enviarErro("Token expirado.", "401");
     }
 
     @MessageExceptionHandler(MalformedJwtException.class)
-    public String handleMalformedJwtException(MalformedJwtException ex) {
-        return "Erro 401: Token inválido.";
+    public void handleMalformedJwtException(MalformedJwtException ex) {
+        enviarErro("Token inválido.", "401");
     }
 
     @MessageExceptionHandler(SignatureException.class)
-    public String handleSignatureException(SignatureException ex) {
-        return "Erro 401: Token ausente ou assinatura inválida.";
+    public void handleSignatureException(SignatureException ex) {
+        enviarErro("Token ausente ou assinatura inválida.", "401");
     }
 
     @MessageExceptionHandler(BadJwtException.class)
-    public String handleBadJwtException(BadJwtException ex) {
-        return "Erro 401: " + ex.getMessage();
+    public void handleBadJwtException(BadJwtException ex) {
+        enviarErro(ex.getMessage(), "401");
     }
 
     @MessageExceptionHandler(ErroDeAutenticacaoGeral.class)
-    public String handleErroDeAutenticacaoGeral(ErroDeAutenticacaoGeral ex) {
-        return "Erro 401: " + ex.getMessage();
+    public void handleErroDeAutenticacaoGeral(ErroDeAutenticacaoGeral ex) {
+        enviarErro(ex.getMessage(), "401");
     }
 
-    @MessageExceptionHandler({ io.jsonwebtoken.JwtException.class })
-    public String handleJwtException(io.jsonwebtoken.JwtException ex) {
-        return "Erro 401: " + ex.getMessage();
+    @MessageExceptionHandler(io.jsonwebtoken.JwtException.class)
+    public void handleJwtException(io.jsonwebtoken.JwtException ex) {
+        enviarErro(ex.getMessage(), "401");
     }
-
-
-
 }

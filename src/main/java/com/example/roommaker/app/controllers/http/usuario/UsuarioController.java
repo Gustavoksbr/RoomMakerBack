@@ -1,6 +1,5 @@
 package com.example.roommaker.app.controllers.http.usuario;
 
-
 import com.example.roommaker.app.controllers.http.usuario.request.*;
 import com.example.roommaker.app.domain.models.JwtResponse;
 import com.example.roommaker.app.domain.models.Response;
@@ -20,55 +19,62 @@ import java.util.Map;
 
 @RestController
 public class UsuarioController {
-   @Autowired
-   private UsuarioManager usuarioManager;
-
-
+    @Autowired
+    private UsuarioManager usuarioManager;
 
     @PostMapping("/login")
-    public ResponseEntity<Response> authenticate(@RequestBody @Valid UsuarioParaEntrarRequest usuario){
-     Response response = usuarioManager.authenticate(usuario.toDomain());
-     return ResponseEntity.ok(response);
-}
+    public ResponseEntity<Response> authenticate(@RequestBody @Valid UsuarioParaEntrarRequest usuario) {
+        Response response = usuarioManager.authenticate(usuario.toDomain());
+        return ResponseEntity.ok(response);
+    }
 
- @PostMapping("/cadastro")
-public ResponseEntity<JwtResponse> createUser(@RequestBody @Valid UsuarioParaCriarRequest usuario) throws InterruptedException {
-    JwtResponse jwtResponse = new JwtResponse(usuarioManager.createUser(usuario.toDomain()));
-    return ResponseEntity.ok(jwtResponse);
-}
+    @PostMapping("/cadastro")
+    public ResponseEntity<JwtResponse> createUser(@RequestBody @Valid UsuarioParaCriarRequest usuario)
+            throws InterruptedException {
+        JwtResponse jwtResponse = new JwtResponse(usuarioManager.createUser(usuario.toDomain()));
+        return ResponseEntity.ok(jwtResponse);
+    }
+
     @PostMapping("/usuario/esquecisenha")
-    public ResponseEntity<Void> esqueciSenha(@RequestBody EsqueciSenhaRequest esqueciSenhaRequest){
+    public ResponseEntity<Void> esqueciSenha(@RequestBody EsqueciSenhaRequest esqueciSenhaRequest) {
         Usuario usuario = Usuario.builder().email(esqueciSenhaRequest.getEmail()).build();
         usuarioManager.esqueciSenha(usuario);
         return ResponseEntity.ok().build();
 
     }
+
     @PostMapping("/usuario/novasenha")
-    public ResponseEntity<JwtResponse> novaSenha(@RequestBody CodigoRecuperacaoSenhaRequest codigoPorEmailRequest){
-        Usuario usuario = Usuario.builder().email(codigoPorEmailRequest.getEmail()).password(codigoPorEmailRequest.getPassword()).build();
-        JwtResponse jwtResponse = new JwtResponse(usuarioManager.alterarSenha(usuario, codigoPorEmailRequest.getCodigo()));
+    public ResponseEntity<JwtResponse> novaSenha(@RequestBody CodigoRecuperacaoSenhaRequest codigoPorEmailRequest) {
+        Usuario usuario = Usuario.builder().email(codigoPorEmailRequest.getEmail())
+                .password(codigoPorEmailRequest.getPassword()).build();
+        JwtResponse jwtResponse = new JwtResponse(
+                usuarioManager.alterarSenha(usuario, codigoPorEmailRequest.getCodigo()));
         return ResponseEntity.ok(jwtResponse);
     }
-// endpoints prontos no back end mas não implementados no front end:
+    // endpoints prontos no back end mas não implementados no front end:
 
-@PostMapping("/login2fa")
-public ResponseEntity<JwtResponse> authenticate2fa(@RequestBody @Valid CodigoPorEmailRequest codigoPorEmailRequest){
-    Usuario usuario = Usuario.builder().email(codigoPorEmailRequest.getEmail()).build();
-    JwtResponse jwtResponse = new JwtResponse(usuarioManager.authenticate2fa(usuario, codigoPorEmailRequest.getCodigo()));
-    return ResponseEntity.ok(jwtResponse);
-}
-@PutMapping("/usuario/doisfatores")
-public ResponseEntity<Boolean> doisFatores(HttpServletRequest request) {
-    String token = request.getHeader("Authorization");
-    return ResponseEntity.ok(usuarioManager.habilitarDesabilitarDoisFatores(token));
-}
+    @PostMapping("/login2fa")
+    public ResponseEntity<JwtResponse> authenticate2fa(
+            @RequestBody @Valid CodigoPorEmailRequest codigoPorEmailRequest) {
+        Usuario usuario = Usuario.builder().email(codigoPorEmailRequest.getEmail()).build();
+        JwtResponse jwtResponse = new JwtResponse(
+                usuarioManager.authenticate2fa(usuario, codigoPorEmailRequest.getCodigo()));
+        return ResponseEntity.ok(jwtResponse);
+    }
 
-@GetMapping("/usuarios")
-public ResponseEntity<List<UsuarioParaListarResponse>> listarUsuarios(@RequestParam(defaultValue = "") String substring){
-    List<UsuarioParaListarResponse> lista;
-    lista = usuarioManager.listarUsuarios(substring).stream().map(UsuarioParaListarResponse::new).toList();
-    return ResponseEntity.ok(lista);
-}
+    @PutMapping("/usuario/doisfatores")
+    public ResponseEntity<Boolean> doisFatores(HttpServletRequest request) {
+        String token = request.getHeader("Authorization");
+        return ResponseEntity.ok(usuarioManager.habilitarDesabilitarDoisFatores(token));
+    }
+
+    @GetMapping("/usuarios")
+    public ResponseEntity<List<UsuarioParaListarResponse>> listarUsuarios(
+            @RequestParam(defaultValue = "") String substring) {
+        List<UsuarioParaListarResponse> lista;
+        lista = usuarioManager.listarUsuarios(substring).stream().map(UsuarioParaListarResponse::new).toList();
+        return ResponseEntity.ok(lista);
+    }
 
     @GetMapping("/datanascimento")
     public ResponseEntity<Map<String, String>> getDataNascimento(HttpServletRequest request) {
@@ -81,16 +87,27 @@ public ResponseEntity<List<UsuarioParaListarResponse>> listarUsuarios(@RequestPa
         return ResponseEntity.ok(response);
     }
 
+    // [CANCELADO] alterarUsername - username é usado como chave em todas as
+    // coleções do MongoDB,
+    // atualizar exigiria cascade update manual em salas, chats, jogos, etc.
+    // @PatchMapping("/usuario/username")
+    // public ResponseEntity<JwtResponse> alterarUsername(@RequestBody @Valid
+    // AlterarUsernameRequest body,
+    // HttpServletRequest request) {
+    // String usernameAtual = request.getAttribute("username").toString();
+    // String novoToken = usuarioManager.alterarUsername(usernameAtual,
+    // body.getNovoUsername());
+    // return ResponseEntity.ok(new JwtResponse(novoToken));
+    // }
 
-// endpoints incompletos. São possíveis ideias no futuro:
+    // endpoints incompletos. São possíveis ideias no futuro:
 
-//@PutMapping("profile")
+    // @PutMapping("profile")
 
-//   @GetMapping("/username")
-//   public ResponseEntity<Username> getUsername(HttpServletRequest request){
-//       String username = request.getAttribute("username").toString();
-//       Username usernameClass = new Username(username);
-//       return ResponseEntity.ok(usernameClass);
-//   }
-   }
-
+    // @GetMapping("/username")
+    // public ResponseEntity<Username> getUsername(HttpServletRequest request){
+    // String username = request.getAttribute("username").toString();
+    // Username usernameClass = new Username(username);
+    // return ResponseEntity.ok(usernameClass);
+    // }
+}

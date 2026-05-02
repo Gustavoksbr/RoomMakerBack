@@ -6,12 +6,26 @@ import java.util.List;
 
 public interface SalaRepository {
     List<Sala> listar(String usernameDono, String nomeSala, String categoria);
+
     List<Sala> listarPorParticipante(String usernameParticipante);
+
     List<Sala> listarPorDono(String usernameDono);
+
     Sala criar(Sala sala);
+
     Sala mostrarSala(String nomeSala, String usernameDono);
+
     Sala adicionarParticipante(String nomesala, String usernameDono, String senha, String usernameParticipante);
+
     Sala verificarSeUsuarioEstaNaSalaERetornarSala(String nomeSala, String usernameDono, String usernameParticipante);
+
     void excluirSala(String usernameDono, String nomeSala);
+
     Sala sairDaSala(String usernameDono, String nomeSala, String usernameSaindo);
+
+    Sala alterarCapacidade(String usernameDono, String nomeSala, Long novaCapacidade);
+
+    String verSenha(String usernameDono, String nomeSala);
+
+    Sala alterarSenha(String usernameDono, String nomeSala, String novaSenha);
 }

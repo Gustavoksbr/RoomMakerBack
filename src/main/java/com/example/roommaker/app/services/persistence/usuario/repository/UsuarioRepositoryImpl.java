@@ -16,7 +16,6 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-
 @Repository
 public class UsuarioRepositoryImpl implements UsuarioRepository {
     @Autowired
@@ -25,9 +24,9 @@ public class UsuarioRepositoryImpl implements UsuarioRepository {
     // metodos privados
 
     private UserEntity entityFindByUsername(String username) {
-        return this.mongoUsuarioRepository.findByUsernameAndAtivoTrue(username).orElseThrow(() -> new UsuarioNaoEncontrado(username));
+        return this.mongoUsuarioRepository.findByUsernameAndAtivoTrue(username)
+                .orElseThrow(() -> new UsuarioNaoEncontrado(username));
     }
-
 
     // implementacoes
     @Override
@@ -37,12 +36,15 @@ public class UsuarioRepositoryImpl implements UsuarioRepository {
 
     @Override
     public Usuario encontrarUsernameDoUsuarioAtual(String username) {
-        return this.mongoUsuarioRepository.findByUsernameAndAtivoTrue(username).orElseThrow(() -> new ErroDeAutenticacaoGeral("Usuário não encontrado")).toUsuario();
+        return this.mongoUsuarioRepository.findByUsernameAndAtivoTrue(username)
+                .orElseThrow(() -> new ErroDeAutenticacaoGeral("Usuário não encontrado")).toUsuario();
     }
 
     @Override
     public Usuario encontrarPorEmail(String email) {
-        return this.mongoUsuarioRepository.findByEmailAndAtivoTrue(email).orElseThrow(() -> new ErroDeAutenticacaoGeral("Usuário com email "+email+" não encontrado")).toUsuario();
+        return this.mongoUsuarioRepository.findByEmailAndAtivoTrue(email)
+                .orElseThrow(() -> new ErroDeAutenticacaoGeral("Usuário com email " + email + " não encontrado"))
+                .toUsuario();
     }
 
     @Override
@@ -52,8 +54,6 @@ public class UsuarioRepositoryImpl implements UsuarioRepository {
         this.mongoUsuarioRepository.save(userEntity);
     }
 
-
-
     @Override
     public List<Usuario> listar() {
         return this.mongoUsuarioRepository.findAllByAtivoTrue().stream().map(UserEntity::toUsuario).toList();
@@ -61,7 +61,8 @@ public class UsuarioRepositoryImpl implements UsuarioRepository {
 
     @Override
     public List<Usuario> listarComSubstring(String substring) {
-        List<Usuario> lista= this.mongoUsuarioRepository.encontrarPorSubstring(substring).orElse(new ArrayList<>()).stream().map(UserEntity::toUsuarioSemSenha).toList();
+        List<Usuario> lista = this.mongoUsuarioRepository.encontrarPorSubstring(substring).orElse(new ArrayList<>())
+                .stream().map(UserEntity::toUsuarioSemSenha).toList();
         return lista;
     }
 
@@ -86,23 +87,34 @@ public class UsuarioRepositoryImpl implements UsuarioRepository {
         }
     }
 
-
     @Override
     public Usuario encontrarUsernameDeOutroUsuario(String username) {
         return this.entityFindByUsername(username).toUsuario();
     }
 
-
     @Override
     public void alterarDoisFatores(Usuario usuario) {
-         UserEntity userEntity = this.entityFindByUsername(usuario.getUsername());
-         userEntity.setDoisFatores(usuario.getDoisFatores());
-         this.mongoUsuarioRepository.save(userEntity);
-        }
+        UserEntity userEntity = this.entityFindByUsername(usuario.getUsername());
+        userEntity.setDoisFatores(usuario.getDoisFatores());
+        this.mongoUsuarioRepository.save(userEntity);
+    }
 
     @Override
     public LocalDate getDataNascimento(String username) {
         UserEntity userEntity = this.entityFindByUsername(username);
         return userEntity.getDataNascimento();
     }
+
+    // [CANCELADO] alterarUsername - username é usado como chave em todas as
+    // coleções do MongoDB,
+    // atualizar exigiria cascade update manual em salas, chats, jogos, etc.
+    // @Override
+    // public void alterarUsername(String usernameAtual, String novoUsername) {
+    // if (this.mongoUsuarioRepository.existsByUsername(novoUsername)) {
+    // throw new Erro409("O username '" + novoUsername + "' já está em uso.");
+    // }
+    // UserEntity userEntity = this.entityFindByUsername(usernameAtual);
+    // userEntity.setUsername(novoUsername);
+    // this.mongoUsuarioRepository.save(userEntity);
+    // }
 }

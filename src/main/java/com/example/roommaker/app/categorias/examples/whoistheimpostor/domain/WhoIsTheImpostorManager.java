@@ -26,8 +26,7 @@ public class WhoIsTheImpostorManager implements JogoPort {
     public WhoIsTheImpostorManager(
             WhoIsTheImpostorRepository repository,
             WhoIsTheImpostorSender whoIsTheImpostorSender,
-           @Lazy SalaManager salaManager
-    ) {
+            @Lazy SalaManager salaManager) {
         this.repository = repository;
         this.whoIsTheImpostorSender = whoIsTheImpostorSender;
         this.salaManager = salaManager;
@@ -38,10 +37,8 @@ public class WhoIsTheImpostorManager implements JogoPort {
         Sala sala = salaManager.mostrarSala(nomeSala, usernameDono);
         validarSala(sala, username);
 
-        WhoIsTheImpostor whoIsTheImpostorExistente =
-                repository.findByNomeSalaAndUsernameDono(
-                        sala.getNome(), sala.getUsernameDono()
-                );
+        WhoIsTheImpostor whoIsTheImpostorExistente = repository.findByNomeSalaAndUsernameDono(
+                sala.getNome(), sala.getUsernameDono());
         if (whoIsTheImpostorExistente != null && whoIsTheImpostorExistente.getJogando()) {
             throw new ErroDeRequisicaoGeral("Partida já está em andamento");
         }
@@ -76,16 +73,13 @@ public class WhoIsTheImpostorManager implements JogoPort {
         repository.save(jogo);
 
         jogadores.forEach(jogador -> {
-            WhoIsTheImpostorResponse response =
-                    criarResponse(jogo, jogador,
-                            jogo.getVotosPorvotador().getOrDefault(jogador, "")
-                    );
+            WhoIsTheImpostorResponse response = criarResponse(jogo, jogador,
+                    jogo.getVotosPorvotador().getOrDefault(jogador, ""));
             whoIsTheImpostorSender.enviarParaUsuario(
                     sala.getUsernameDono(),
                     sala.getNome(),
                     jogador,
-                    response
-            );
+                    response);
         });
     }
 
@@ -99,59 +93,48 @@ public class WhoIsTheImpostorManager implements JogoPort {
         List<String> ouvintes = new ArrayList<>(sala.getUsernameParticipantes());
         ouvintes.add(sala.getUsernameDono());
 
-        WhoIsTheImpostorResponse response =
-                criarResponse(jogo,"","");
+        WhoIsTheImpostorResponse response = criarResponse(jogo, "", "");
 
         whoIsTheImpostorSender.enviarParaTodos(
                 sala.getUsernameDono(),
                 sala.getNome(),
                 ouvintes,
-                response
-        );
+                response);
     }
-
 
     public WhoIsTheImpostorResponse mostrarJogoAtual(String nomeSala, String usernameDono, String username) {
 
         Sala sala = salaManager.verificarSeUsuarioEstaNaSalaERetornarSala(
-                nomeSala, usernameDono, username
-        );
+                nomeSala, usernameDono, username);
 
         if (!sala.getCategoria().equals("whoistheimpostor")) {
             throw new ErroDeRequisicaoGeral("Categoria inválida");
         }
 
-        WhoIsTheImpostor jogo =
-                repository.findByNomeSalaAndUsernameDono(
-                        sala.getNome(), sala.getUsernameDono()
-                );
+        WhoIsTheImpostor jogo = repository.findByNomeSalaAndUsernameDono(
+                sala.getNome(), sala.getUsernameDono());
 
-        WhoIsTheImpostorResponse response =
-                criarResponse(jogo, username,
-                        jogo.getVotosPorvotador().getOrDefault(username, "")
-                );
+        WhoIsTheImpostorResponse response = criarResponse(jogo, username,
+                jogo.getVotosPorvotador().getOrDefault(username, ""));
 
-//        whoIsTheImpostorSender.enviarParaUsuario(
-//                sala.getUsernameDono(),
-//                sala.getNome(),
-//                username,
-//                response
-//        );
+        // whoIsTheImpostorSender.enviarParaUsuario(
+        // sala.getUsernameDono(),
+        // sala.getNome(),
+        // username,
+        // response
+        // );
         return response;
     }
 
     public void votar(String nomeSala, String usernameDono, String username, String usernameVotado) {
         Sala sala = salaManager.verificarSeUsuarioEstaNaSalaERetornarSala(
-                nomeSala, usernameDono, username
-        );
-        WhoIsTheImpostor jogo =
-                repository.findByNomeSalaAndUsernameDono(
-                        sala.getNome(), sala.getUsernameDono()
-                );
+                nomeSala, usernameDono, username);
+        WhoIsTheImpostor jogo = repository.findByNomeSalaAndUsernameDono(
+                sala.getNome(), sala.getUsernameDono());
         if (!jogo.getJogando()) {
             throw new ErroDeRequisicaoGeral("Partida não está sendo jogada");
         }
-        if(!jogo.getJogadores().contains(username)){
+        if (!jogo.getJogadores().contains(username)) {
             throw new ErroDeRequisicaoGeral("Você não está na partida");
         }
         if (username.equals(usernameVotado)) {
@@ -172,15 +155,14 @@ public class WhoIsTheImpostorManager implements JogoPort {
             List<String> ouvintes = new ArrayList<>(sala.getUsernameParticipantes());
             ouvintes.add(sala.getUsernameDono());
 
-            WhoIsTheImpostorResponse response =
-                    criarResponse(jogo,username,jogo.getVotosPorvotador().getOrDefault(username, ""));
+            WhoIsTheImpostorResponse response = criarResponse(jogo, username,
+                    jogo.getVotosPorvotador().getOrDefault(username, ""));
 
             whoIsTheImpostorSender.enviarParaTodos(
                     sala.getUsernameDono(),
                     sala.getNome(),
                     ouvintes,
-                    response
-            );
+                    response);
             return;
         }
 
@@ -189,31 +171,25 @@ public class WhoIsTheImpostorManager implements JogoPort {
 
         List<String> jogadores = jogo.getJogadores();
         jogadores.forEach(jogador -> {
-            WhoIsTheImpostorResponse response =
-                    criarResponse(jogo, jogador,
-                            jogo.getVotosPorvotador().getOrDefault(jogador, "")
-                    );
+            WhoIsTheImpostorResponse response = criarResponse(jogo, jogador,
+                    jogo.getVotosPorvotador().getOrDefault(jogador, ""));
             whoIsTheImpostorSender.enviarParaUsuario(
                     sala.getUsernameDono(),
                     sala.getNome(),
                     jogador,
-                    response
-            );
+                    response);
         });
     }
 
     public void cancelarVoto(String nomeSala, String usernameDono, String username) {
         Sala sala = salaManager.verificarSeUsuarioEstaNaSalaERetornarSala(
-                nomeSala, usernameDono, username
-        );
-        WhoIsTheImpostor jogo =
-                repository.findByNomeSalaAndUsernameDono(
-                        sala.getNome(), sala.getUsernameDono()
-                );
+                nomeSala, usernameDono, username);
+        WhoIsTheImpostor jogo = repository.findByNomeSalaAndUsernameDono(
+                sala.getNome(), sala.getUsernameDono());
         if (!jogo.getJogando()) {
             throw new ErroDeRequisicaoGeral("Partida não está sendo jogada");
         }
-        if(!jogo.getJogadores().contains(username)){
+        if (!jogo.getJogadores().contains(username)) {
             throw new ErroDeRequisicaoGeral("Você não está na partida");
         }
         jogo.getVotosPorvotador().put(username, "");
@@ -222,37 +198,34 @@ public class WhoIsTheImpostorManager implements JogoPort {
 
         List<String> jogadores = jogo.getJogadores();
         jogadores.forEach(jogador -> {
-            WhoIsTheImpostorResponse response =
-                    criarResponse(jogo, jogador,
-                            jogo.getVotosPorvotador().getOrDefault(jogador, "")
-                    );
+            WhoIsTheImpostorResponse response = criarResponse(jogo, jogador,
+                    jogo.getVotosPorvotador().getOrDefault(jogador, ""));
             whoIsTheImpostorSender.enviarParaUsuario(
                     sala.getUsernameDono(),
                     sala.getNome(),
                     jogador,
-                    response
-            );
+                    response);
         });
 
     }
 
     @Override
     public void saidaDeParticipante(String usernameParticipante, Sala sala) {
-        WhoIsTheImpostor jogo =
-                repository.findByNomeSalaAndUsernameDono(
-                        sala.getNome(), sala.getUsernameDono()
-                );
+        WhoIsTheImpostor jogo = repository.findByNomeSalaAndUsernameDono(
+                sala.getNome(), sala.getUsernameDono());
         if (jogo.getJogando() && jogo.getJogadores().contains(usernameParticipante)) {
-            terminarPartida(sala.getNome(), sala.getUsernameDono() , sala.getUsernameDono());
+            terminarPartida(sala.getNome(), sala.getUsernameDono(), sala.getUsernameDono());
         }
     }
 
-    @Override public void validarSalaParaOJogo(Sala sala) {
-        if(sala.getQtdCapacidade() < 3){
-            throw new ErroDeRequisicaoGeral("Quantidade de participantes deve ser no mínimo 3 para jogar Who Is The Impostor");
+    @Override
+    public void validarSalaParaOJogo(Sala sala) {
+        // null = capacidade infinita, permitido para whoistheimpostor
+        if (sala.getQtdCapacidade() != null && sala.getQtdCapacidade() < 3) {
+            throw new ErroDeRequisicaoGeral(
+                    "Quantidade de participantes deve ser no mínimo 3 para jogar Who Is The Impostor");
         }
     }
-
 
     @Override
     public void deletarJogo(Sala sala) {
@@ -261,21 +234,17 @@ public class WhoIsTheImpostorManager implements JogoPort {
         List<String> ouvintes = new ArrayList<>(sala.getUsernameParticipantes());
         ouvintes.add(sala.getUsernameDono());
 
-        WhoIsTheImpostorResponse response =
-                criarResponse(jogo,"","");
+        WhoIsTheImpostorResponse response = criarResponse(jogo, "", "");
 
         whoIsTheImpostorSender.enviarParaTodos(
                 sala.getUsernameDono(),
                 sala.getNome(),
                 ouvintes,
-                response
-        );
+                response);
 
         repository.deleteByNomeSalaAndUsernameDono(
-                sala.getNome(), sala.getUsernameDono()
-        );
+                sala.getNome(), sala.getUsernameDono());
     }
-
 
     private void validarSala(Sala sala, String dono) {
         if (!sala.getCategoria().equals("whoistheimpostor")) {
@@ -287,10 +256,8 @@ public class WhoIsTheImpostorManager implements JogoPort {
     }
 
     private WhoIsTheImpostor zerarJogo(Sala sala) {
-        WhoIsTheImpostor jogo =
-                repository.findByNomeSalaAndUsernameDono(
-                        sala.getNome(), sala.getUsernameDono()
-                );
+        WhoIsTheImpostor jogo = repository.findByNomeSalaAndUsernameDono(
+                sala.getNome(), sala.getUsernameDono());
 
         jogo.setJogando(false);
         repository.save(jogo);
@@ -308,16 +275,14 @@ public class WhoIsTheImpostorManager implements JogoPort {
         repository.save(jogo);
     }
 
-
-
     private WhoIsTheImpostorResponse criarResponse(WhoIsTheImpostor jogo, String usuario, String votado) {
 
         WhoIsTheImpostorResponse r = new WhoIsTheImpostorResponse();
 
-        //nao ta em jogo
+        // nao ta em jogo
         if (!jogo.getJogando()) {
             r.setPartidaSendoJogada(false);
-            if(jogo.getImpostor() == null) {
+            if (jogo.getImpostor() == null) {
                 return r;
             }
             r.setJogadoresDaPartidaPassada(jogo.getJogadores());
@@ -336,7 +301,7 @@ public class WhoIsTheImpostorManager implements JogoPort {
             return r;
         }
 
-        //em jogo
+        // em jogo
         r.setPartidaSendoJogada(true);
         r.setJogadoresNaPartida(jogo.getJogadores());
         long quantidadeVotos = jogo.getVotosPorvotador().values().stream()

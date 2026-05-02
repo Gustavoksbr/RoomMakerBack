@@ -1,5 +1,6 @@
 package com.example.roommaker.app.controllers.http.ping;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -12,17 +13,16 @@ import java.time.format.DateTimeFormatter;
 @RestController
 @RequestMapping("/ping")
 public class PingController {
+
+    @Value("${self.ping.url}")
+    private String selfUrl;
+
+    private final RestTemplate restTemplate = new RestTemplate();
+
     @GetMapping
     public String ping() {
         return "pong";
     }
-
-    private final RestTemplate restTemplate = new RestTemplate();
-
-    // http://localhost:8080/ping
-    // https://roommakerback.onrender.com/ping
-
-    private static final String SELF_URL = "https://roommakerback.onrender.com/ping";
 
     // A cada 10 minutos (10 * 60 * 1000 ms)
     @Scheduled(fixedRate = 10 * 60 * 1000)
@@ -30,7 +30,7 @@ public class PingController {
         var now = LocalDateTime.now();
         var formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         String formattedNow = now.format(formatter);
-        restTemplate.getForObject(SELF_URL, String.class);
+        restTemplate.getForObject(selfUrl, String.class);
         System.out.println("Auto-Ping OK [" + formattedNow + "]: ");
     }
 }

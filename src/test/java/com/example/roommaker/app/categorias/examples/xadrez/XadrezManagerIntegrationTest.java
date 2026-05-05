@@ -450,4 +450,95 @@ class XadrezManagerIntegrationTest {
         assertEquals(MotivoXadrez.XEQUE_MATE, p.getMotivo());
         assertEquals(7, p.getLances().size());
     }
+
+    // =========================================================================
+    // Testes de validação de notação
+    // =========================================================================
+
+    @Test
+    @Order(100)
+    @DisplayName("jogar: rejeita notação inglesa quando configurado para português")
+    void jogarRejeitaNotacaoInglesaEmPortugues() {
+        xadrezManager.criarSalaDeJogo(salaMock);
+        configurarEIniciar(NotacaoXadrez.PORTUGUESA);
+
+        // Tenta jogar com notação inglesa (N = cavalo)
+        ErroDeRequisicaoGeral erro = assertThrows(ErroDeRequisicaoGeral.class,
+                () -> xadrezManager.jogar(SALA, DONO, DONO, "Nf3"));
+        assertTrue(erro.getMessage().contains("N→C") || erro.getMessage().contains("notação"));
+    }
+
+    @Test
+    @Order(101)
+    @DisplayName("jogar: rejeita notação portuguesa quando configurado para inglês")
+    void jogarRejeitaNotacaoPortuguesaEmIngles() {
+        xadrezManager.criarSalaDeJogo(salaMock);
+        configurarEIniciar(NotacaoXadrez.INGLESA);
+
+        // Tenta jogar com notação portuguesa (C = cavalo)
+        ErroDeRequisicaoGeral erro = assertThrows(ErroDeRequisicaoGeral.class,
+                () -> xadrezManager.jogar(SALA, DONO, DONO, "Cf3"));
+        assertTrue(erro.getMessage().contains("C→N") || erro.getMessage().contains("notação"));
+    }
+
+    @Test
+    @Order(102)
+    @DisplayName("jogar: aceita notação portuguesa correta")
+    void jogarAceitaNotacaoPortuguesaCorreta() {
+        xadrezManager.criarSalaDeJogo(salaMock);
+        configurarEIniciar(NotacaoXadrez.PORTUGUESA);
+
+        // Joga com notação portuguesa
+        xadrezManager.jogar(SALA, DONO, DONO, "e4");
+        xadrezManager.jogar(SALA, DONO, PARTICIPANTE, "e5");
+        xadrezManager.jogar(SALA, DONO, DONO, "Cf3"); // Cavalo em português
+
+        SalaXadrez s = repository.findByNomeSalaAndUsernameDono(SALA, DONO);
+        assertEquals(3, s.getPartidaAtual().getLances().size());
+        assertEquals("Cf3", s.getPartidaAtual().getLances().get(2)); // Armazenado em português
+    }
+
+    @Test
+    @Order(103)
+    @DisplayName("jogar: aceita notação inglesa correta")
+    void jogarAceitaNotacaoInglesaCorreta() {
+        xadrezManager.criarSalaDeJogo(salaMock);
+        configurarEIniciar(NotacaoXadrez.INGLESA);
+
+        // Joga com notação inglesa
+        xadrezManager.jogar(SALA, DONO, DONO, "e4");
+        xadrezManager.jogar(SALA, DONO, PARTICIPANTE, "e5");
+        xadrezManager.jogar(SALA, DONO, DONO, "Nf3"); // Cavalo em inglês
+
+        SalaXadrez s = repository.findByNomeSalaAndUsernameDono(SALA, DONO);
+        assertEquals(3, s.getPartidaAtual().getLances().size());
+        assertEquals("Nf3", s.getPartidaAtual().getLances().get(2)); // Armazenado em inglês
+    }
+
+    @Test
+    @Order(104)
+    @DisplayName("jogar: partida completa em notação portuguesa")
+    void jogarPartidaCompletaPortugues() {
+        xadrezManager.criarSalaDeJogo(salaMock);
+        configurarEIniciar(NotacaoXadrez.PORTUGUESA);
+
+        // Sequência de lances em português
+        xadrezManager.jogar(SALA, DONO, DONO, "e4");
+        xadrezManager.jogar(SALA, DONO, PARTICIPANTE, "e5");
+        xadrezManager.jogar(SALA, DONO, DONO, "Cf3"); // Cavalo
+        xadrezManager.jogar(SALA, DONO, PARTICIPANTE, "Cc6"); // Cavalo
+
+        SalaXadrez s = repository.findByNomeSalaAndUsernameDono(SALA, DONO);
+        List<String> lances = s.getPartidaAtual().getLances();
+        assertEquals(4, lances.size());
+
+        // Verifica que os lances de cavalo estão em português
+        assertTrue(lances.contains("Cf3"));
+        assertTrue(lances.contains("Cc6"));
+    }
+
+    // Helper para configurar e iniciar com notação específica
+    private void configurarEIniciar(NotacaoXadrez notacao) {
+        xadrezManager.configurarEIniciar(SALA, DONO, DONO, DONO, PARTICIPANTE, notacao);
+    }
 }

@@ -105,6 +105,24 @@ public class XadrezLogica {
         return board;
     }
 
+    /**
+     * Reconstrói o board a partir de lances armazenados em uma notação específica.
+     * Converte os lances para inglês antes de processar.
+     */
+    public static Board reconstruirBoard(List<String> lances,
+            com.example.roommaker.app.categorias.examples.xadrez.domain.model.NotacaoXadrez notacao) {
+        Board board = new Board();
+        for (String san : lances) {
+            // Converte para inglês antes de processar
+            String sanIngles = NotacaoConverter.paraIngles(san, notacao);
+            Move move = resolverMove(board, sanIngles);
+            if (move == null)
+                throw new IllegalStateException("Lance corrompido no histórico: '" + san + "'");
+            board.doMove(move);
+        }
+        return board;
+    }
+
     public static String sanCanonica(Board boardAntes, Move move, List<String> lancesAnteriores) {
         try {
             Board temp = new Board();
@@ -125,6 +143,32 @@ public class XadrezLogica {
         return move.toString();
     }
 
+    /**
+     * Gera a SAN canônica (em inglês) para um movimento, considerando lances
+     * anteriores em uma notação específica.
+     */
+    public static String sanCanonica(Board boardAntes, Move move, List<String> lancesAnteriores,
+            com.example.roommaker.app.categorias.examples.xadrez.domain.model.NotacaoXadrez notacao) {
+        try {
+            Board temp = new Board();
+            MoveList acumulada = new MoveList();
+            for (String san : lancesAnteriores) {
+                // Converte para inglês antes de processar
+                String sanIngles = NotacaoConverter.paraIngles(san, notacao);
+                Move m = resolverMove(temp, sanIngles);
+                if (m != null) {
+                    temp.doMove(m);
+                    acumulada.add(m);
+                }
+            }
+            acumulada.add(move);
+            String[] arr = acumulada.toSanArray();
+            if (arr != null && arr.length > 0)
+                return arr[arr.length - 1];
+        } catch (Exception ignored) {
+        }
+        return move.toString();
+    }
 
     public enum TipoEntrada {
         VALIDO, LANCE_ILEGAL, NOTACAO_INVALIDA
@@ -135,6 +179,7 @@ public class XadrezLogica {
 
     public record ResultadoFim(ResultadoXadrez resultado, MotivoXadrez motivo) {
     }
+
     public static Board jogarSequencia(String... sans) {
         Board board = new Board();
 
@@ -148,8 +193,7 @@ public class XadrezLogica {
 
             if (move == null) {
                 throw new IllegalArgumentException(
-                        "Lance inválido na jogada " + (i + 1) + ": '" + san + "'"
-                );
+                        "Lance inválido na jogada " + (i + 1) + ": '" + san + "'");
             }
 
             board.doMove(move);
@@ -157,6 +201,7 @@ public class XadrezLogica {
 
         return board;
     }
+
     public static String[] sanCanonicaDe(String... lances) {
         Board board = new Board();
         List<String> canonicos = new java.util.ArrayList<>();
@@ -171,8 +216,7 @@ public class XadrezLogica {
 
             if (move == null) {
                 throw new IllegalArgumentException(
-                        "Lance inválido na jogada " + (i + 1) + ": '" + entrada + "'"
-                );
+                        "Lance inválido na jogada " + (i + 1) + ": '" + entrada + "'");
             }
 
             // Gera SAN canônica considerando o histórico já normalizado.

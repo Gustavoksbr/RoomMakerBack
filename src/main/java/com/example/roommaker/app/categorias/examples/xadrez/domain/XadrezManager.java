@@ -165,8 +165,21 @@ public class XadrezManager implements JogoPort {
             throw new ErroDeRequisicaoGeral("Não é a sua vez de jogar.");
         }
 
-        Board board = XadrezLogica.reconstruirBoard(partida.getLances());
-        Classificacao classif = XadrezLogica.classificarEntrada(board, san);
+        // Valida que o lance está na notação correta
+        if (!NotacaoValidator.validarNotacao(san, salaXadrez.getNotacao())) {
+            String erroNotacao = NotacaoValidator.obterErroNotacao(san, salaXadrez.getNotacao());
+            if (erroNotacao != null) {
+                throw new ErroDeRequisicaoGeral(erroNotacao);
+            }
+            throw new ErroDeRequisicaoGeral("Lance contém caracteres inválidos para a notação " +
+                    salaXadrez.getNotacao().name().toLowerCase() + ".");
+        }
+
+        // Converte da notação configurada para inglês (SAN padrão)
+        String sanIngles = NotacaoConverter.paraIngles(san, salaXadrez.getNotacao());
+
+        Board board = XadrezLogica.reconstruirBoard(partida.getLances(), salaXadrez.getNotacao());
+        Classificacao classif = XadrezLogica.classificarEntrada(board, sanIngles);
 
         switch (classif.tipo()) {
             case NOTACAO_INVALIDA -> {
@@ -183,9 +196,14 @@ public class XadrezManager implements JogoPort {
             }
             case VALIDO -> {
                 Move move = classif.move();
-                String sanCanonica = XadrezLogica.sanCanonica(board, move, partida.getLances());
+                String sanCanonica = XadrezLogica.sanCanonica(board, move, partida.getLances(),
+                        salaXadrez.getNotacao());
                 board.doMove(move);
-                partida.getLances().add(sanCanonica);
+
+                // Converte a SAN canônica (inglês) para a notação configurada antes de
+                // armazenar
+                String sanArmazenada = NotacaoConverter.deIngles(sanCanonica, salaXadrez.getNotacao());
+                partida.getLances().add(sanArmazenada);
                 partida.setPropostaEmpate(null); // jogar cancela proposta de empate
 
                 ResultadoFim fim = XadrezLogica.verificarFim(board);

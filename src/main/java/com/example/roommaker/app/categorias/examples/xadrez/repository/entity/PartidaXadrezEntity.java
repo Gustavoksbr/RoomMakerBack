@@ -26,6 +26,7 @@ public class PartidaXadrezEntity {
     private int lancesIlegaisPretas;
     private String usernameBrancas;
     private String usernamePretas;
+    private String notacao; // PORTUGUESA ou INGLESA
 
     public static PartidaXadrezEntity fromDomain(PartidaXadrez p) {
         return PartidaXadrezEntity.builder()
@@ -38,6 +39,7 @@ public class PartidaXadrezEntity {
                 .lancesIlegaisPretas(p.getLancesIlegaisPretas())
                 .usernameBrancas(p.getUsernameBrancas())
                 .usernamePretas(p.getUsernamePretas())
+                .notacao(p.getNotacao() != null ? p.getNotacao().name() : null)
                 .build();
     }
 
@@ -53,6 +55,10 @@ public class PartidaXadrezEntity {
                 .lancesIlegaisPretas(this.lancesIlegaisPretas)
                 .usernameBrancas(this.usernameBrancas)
                 .usernamePretas(this.usernamePretas)
+                .notacao(this.notacao != null
+                        ? com.example.roommaker.app.categorias.examples.xadrez.domain.model.NotacaoXadrez
+                                .valueOf(this.notacao)
+                        : null)
                 .build();
     }
 }

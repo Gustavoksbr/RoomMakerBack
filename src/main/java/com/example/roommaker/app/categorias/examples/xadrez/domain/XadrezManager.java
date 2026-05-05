@@ -99,6 +99,7 @@ public class XadrezManager implements JogoPort {
                 .id(salaXadrez.getProximoIdPartida())
                 .usernameBrancas(salaXadrez.getUsernameBrancas())
                 .usernamePretas(salaXadrez.getUsernamePretas())
+                .notacao(salaXadrez.getNotacao())
                 .build();
         salaXadrez.setProximoIdPartida(salaXadrez.getProximoIdPartida() + 1);
         salaXadrez.setPartidaAtual(partida);
@@ -141,6 +142,7 @@ public class XadrezManager implements JogoPort {
                 .id(salaXadrez.getProximoIdPartida())
                 .usernameBrancas(usernameBrancas)
                 .usernamePretas(usernamePretas)
+                .notacao(notacao != null ? notacao : salaXadrez.getNotacao())
                 .build();
         salaXadrez.setProximoIdPartida(salaXadrez.getProximoIdPartida() + 1);
         salaXadrez.setPartidaAtual(partida);
@@ -433,6 +435,7 @@ public class XadrezManager implements JogoPort {
                             .lancesIlegaisPretas(p.getLancesIlegaisPretas())
                             .usernameBrancas(p.getUsernameBrancas())
                             .usernamePretas(p.getUsernamePretas())
+                            .notacao(p.getNotacao())
                             .build())
                     .sorted((a, b) -> Long.compare(b.getId(), a.getId()))
                     .collect(Collectors.toList());

@@ -50,5 +50,6 @@ public class XadrezResponse {
         private Integer lancesIlegaisPretas;
         private String usernameBrancas;
         private String usernamePretas;
+        private NotacaoXadrez notacao;
     }
 }

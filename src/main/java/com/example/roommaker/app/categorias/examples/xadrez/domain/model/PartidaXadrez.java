@@ -19,6 +19,9 @@ public class PartidaXadrez {
     private String usernameBrancas;
     private String usernamePretas;
 
+    /** Notação usada na partida (PORTUGUESA ou INGLESA) */
+    private NotacaoXadrez notacao;
+
     @Builder.Default
     private List<String> lances = new ArrayList<>();
 

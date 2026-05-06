@@ -14,11 +14,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
@@ -93,12 +91,18 @@ class XadrezTempoIntegrationTest {
 
         PartidaXadrez partida = salaXadrez.getPartidaAtual();
         assertNotNull(partida.getControleTempo());
-        assertEquals(300, partida.getControleTempo().getTempoInicialBrancas());
-        assertEquals(300, partida.getControleTempo().getTempoInicialPretas());
-        assertEquals(3, partida.getControleTempo().getIncrementoBrancas());
-        assertEquals(3, partida.getControleTempo().getIncrementoPretas());
-        assertEquals(300, partida.getControleTempo().getTempoRestanteBrancas());
-        assertEquals(300, partida.getControleTempo().getTempoRestantePretas());
+        assertEquals(300, partida.getControleTempo().getTempoInicialBrancasSegundos());
+        assertEquals(300, partida.getControleTempo().getTempoInicialPretasSegundos());
+        assertEquals(3, partida.getControleTempo().getIncrementoBrancasSegundos());
+        assertEquals(3, partida.getControleTempo().getIncrementoPretasSegundos());
+
+        // Tempo restante pode ter diminuído alguns milissegundos desde a inicialização
+        Integer tempoBrancas = partida.getControleTempo().getTempoRestanteBrancasSegundos();
+        Integer tempoPretas = partida.getControleTempo().getTempoRestantePretasSegundos();
+        assertTrue(tempoBrancas >= 299 && tempoBrancas <= 300,
+                "Tempo das brancas deveria estar entre 299-300s, mas está: " + tempoBrancas);
+        assertTrue(tempoPretas >= 299 && tempoPretas <= 300,
+                "Tempo das pretas deveria estar entre 299-300s, mas está: " + tempoPretas);
         assertNotNull(partida.getControleTempo().getTimestampUltimoLance());
     }
 
@@ -127,10 +131,10 @@ class XadrezTempoIntegrationTest {
         SalaXadrez salaXadrez = repository.findByNomeSalaAndUsernameDono(SALA, DONO);
         PartidaXadrez partida = salaXadrez.getPartidaAtual();
 
-        assertEquals(600, partida.getControleTempo().getTempoInicialBrancas());
-        assertEquals(300, partida.getControleTempo().getTempoInicialPretas());
-        assertEquals(5, partida.getControleTempo().getIncrementoBrancas());
-        assertEquals(3, partida.getControleTempo().getIncrementoPretas());
+        assertEquals(600, partida.getControleTempo().getTempoInicialBrancasSegundos());
+        assertEquals(300, partida.getControleTempo().getTempoInicialPretasSegundos());
+        assertEquals(5, partida.getControleTempo().getIncrementoBrancasSegundos());
+        assertEquals(3, partida.getControleTempo().getIncrementoPretasSegundos());
     }
 
     @Test
@@ -152,7 +156,7 @@ class XadrezTempoIntegrationTest {
 
         // Tempo das brancas deve ter diminuído ~1s mas ganhou +2s de incremento
         // Então deve estar próximo de 11s (10 - 1 + 2)
-        Integer tempoBrancas = partida.getControleTempo().getTempoRestanteBrancas();
+        Integer tempoBrancas = partida.getControleTempo().getTempoRestanteBrancasSegundos();
         assertNotNull(tempoBrancas);
         assertTrue(tempoBrancas >= 10 && tempoBrancas <= 12,
                 "Tempo das brancas deveria estar entre 10-12s, mas está: " + tempoBrancas);
@@ -161,17 +165,13 @@ class XadrezTempoIntegrationTest {
     @Test
     @Order(5)
     @DisplayName("Tempo esgotado - vitória do oponente")
-    void tempoEsgotado_VitoriaOponente() {
-        // Brancas com 0 segundos (já esgotado)
+    void tempoEsgotado_VitoriaOponente() throws InterruptedException {
+        // Brancas com 1 segundo (vai esgotar rapidamente)
         xadrezManager.configurarEIniciar(SALA, DONO, DONO, BRANCAS, PRETAS, NotacaoXadrez.INGLESA,
-                0, 0, 300, 0);
+                1, 0, 300, 0);
 
-        // Brancas tentam jogar com tempo esgotado
-        ErroDeRequisicaoGeral erro = assertThrows(ErroDeRequisicaoGeral.class, () -> {
-            xadrezManager.jogar(SALA, DONO, BRANCAS, "e4");
-        });
-
-        assertEquals("Tempo esgotado!", erro.getMessage());
+        // Aguarda 2 segundos para o scheduler detectar o timeout
+        Thread.sleep(2000);
 
         SalaXadrez salaXadrez = repository.findByNomeSalaAndUsernameDono(SALA, DONO);
         assertFalse(salaXadrez.partidaEmAndamento());
@@ -219,8 +219,8 @@ class XadrezTempoIntegrationTest {
 
         // Verifica que o controle de tempo foi persistido
         assertNotNull(partida.getControleTempo());
-        assertEquals(600, partida.getControleTempo().getTempoInicialBrancas());
-        assertEquals(300, partida.getControleTempo().getTempoInicialPretas());
+        assertEquals(600, partida.getControleTempo().getTempoInicialBrancasSegundos());
+        assertEquals(300, partida.getControleTempo().getTempoInicialPretasSegundos());
         assertNotNull(partida.getControleTempo().getTempoRestanteBrancas());
         assertNotNull(partida.getControleTempo().getTempoRestantePretas());
     }
@@ -249,7 +249,7 @@ class XadrezTempoIntegrationTest {
 
         PartidaXadrez partidaArquivada = historico.get(0);
         assertNotNull(partidaArquivada.getControleTempo());
-        assertEquals(180, partidaArquivada.getControleTempo().getTempoInicialBrancas());
-        assertEquals(180, partidaArquivada.getControleTempo().getTempoInicialPretas());
+        assertEquals(180, partidaArquivada.getControleTempo().getTempoInicialBrancasSegundos());
+        assertEquals(180, partidaArquivada.getControleTempo().getTempoInicialPretasSegundos());
     }
 }

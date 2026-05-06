@@ -20,7 +20,7 @@ class ControleTempoXadrezTest {
     @Test
     void tempoInfinito_QuandoBrancasTemTempo_RetornaFalse() {
         ControleTempoXadrez controle = ControleTempoXadrez.builder()
-                .tempoInicialBrancas(300)
+                .tempoInicialBrancas(300L)
                 .tempoInicialPretas(null)
                 .build();
 
@@ -31,7 +31,7 @@ class ControleTempoXadrezTest {
     void tempoInfinito_QuandoPretasTemTempo_RetornaFalse() {
         ControleTempoXadrez controle = ControleTempoXadrez.builder()
                 .tempoInicialBrancas(null)
-                .tempoInicialPretas(300)
+                .tempoInicialPretas(300L)
                 .build();
 
         assertFalse(controle.tempoInfinito());
@@ -40,14 +40,14 @@ class ControleTempoXadrezTest {
     @Test
     void inicializar_CopiaTempoParaRestante() {
         ControleTempoXadrez controle = ControleTempoXadrez.builder()
-                .tempoInicialBrancas(600)
-                .tempoInicialPretas(300)
+                .tempoInicialBrancas(600L)
+                .tempoInicialPretas(300L)
                 .build();
 
         controle.inicializar();
 
-        assertEquals(600, controle.getTempoRestanteBrancas());
-        assertEquals(300, controle.getTempoRestantePretas());
+        assertEquals(600L, controle.getTempoRestanteBrancas());
+        assertEquals(300L, controle.getTempoRestantePretas());
         assertNotNull(controle.getTimestampUltimoLance());
     }
 
@@ -65,11 +65,11 @@ class ControleTempoXadrezTest {
     @Test
     void tempoEsgotado_QuandoTempoZero_RetornaTrue() {
         ControleTempoXadrez controle = ControleTempoXadrez.builder()
-                .tempoInicialBrancas(300)
-                .tempoInicialPretas(300)
+                .tempoInicialBrancas(300L)
+                .tempoInicialPretas(300L)
                 .build();
         controle.inicializar();
-        controle.setTempoRestanteBrancas(0);
+        controle.setTempoRestanteBrancas(0L);
 
         assertTrue(controle.tempoEsgotado(true));
         assertFalse(controle.tempoEsgotado(false));
@@ -78,11 +78,11 @@ class ControleTempoXadrezTest {
     @Test
     void tempoEsgotado_QuandoTempoNegativo_RetornaTrue() {
         ControleTempoXadrez controle = ControleTempoXadrez.builder()
-                .tempoInicialBrancas(300)
-                .tempoInicialPretas(300)
+                .tempoInicialBrancas(300L)
+                .tempoInicialPretas(300L)
                 .build();
         controle.inicializar();
-        controle.setTempoRestantePretas(-5);
+        controle.setTempoRestantePretas(-5L);
 
         assertFalse(controle.tempoEsgotado(true));
         assertTrue(controle.tempoEsgotado(false));
@@ -91,8 +91,8 @@ class ControleTempoXadrezTest {
     @Test
     void tempoEsgotado_QuandoTempoPositivo_RetornaFalse() {
         ControleTempoXadrez controle = ControleTempoXadrez.builder()
-                .tempoInicialBrancas(300)
-                .tempoInicialPretas(300)
+                .tempoInicialBrancas(300L)
+                .tempoInicialPretas(300L)
                 .build();
         controle.inicializar();
 
@@ -103,26 +103,26 @@ class ControleTempoXadrezTest {
     @Test
     void incremento_PodeSerZero() {
         ControleTempoXadrez controle = ControleTempoXadrez.builder()
-                .tempoInicialBrancas(300)
-                .tempoInicialPretas(300)
-                .incrementoBrancas(0)
-                .incrementoPretas(0)
+                .tempoInicialBrancas(300L)
+                .tempoInicialPretas(300L)
+                .incrementoBrancas(0L)
+                .incrementoPretas(0L)
                 .build();
 
-        assertEquals(0, controle.getIncrementoBrancas());
-        assertEquals(0, controle.getIncrementoPretas());
+        assertEquals(0L, controle.getIncrementoBrancas());
+        assertEquals(0L, controle.getIncrementoPretas());
     }
 
     @Test
     void incremento_PodeSerDiferente() {
         ControleTempoXadrez controle = ControleTempoXadrez.builder()
-                .tempoInicialBrancas(300)
-                .tempoInicialPretas(180)
-                .incrementoBrancas(5)
-                .incrementoPretas(3)
+                .tempoInicialBrancas(300L)
+                .tempoInicialPretas(180L)
+                .incrementoBrancas(5L)
+                .incrementoPretas(3L)
                 .build();
 
-        assertEquals(5, controle.getIncrementoBrancas());
-        assertEquals(3, controle.getIncrementoPretas());
+        assertEquals(5L, controle.getIncrementoBrancas());
+        assertEquals(3L, controle.getIncrementoPretas());
     }
 }

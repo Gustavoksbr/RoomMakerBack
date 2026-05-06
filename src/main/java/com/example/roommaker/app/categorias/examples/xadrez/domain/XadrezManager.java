@@ -180,7 +180,7 @@ public class XadrezManager implements JogoPort {
     // Lance
     // -------------------------------------------------------------------------
 
-    @Transactional
+    @Transactional(noRollbackFor = ErroDeRequisicaoGeral.class)
     public void jogar(String nomeSala, String usernameDono, String username, String san) {
         Sala sala = salaManager.verificarSeUsuarioEstaNaSalaERetornarSala(nomeSala, usernameDono, username);
         SalaXadrez salaXadrez = obterSala(nomeSala, usernameDono);

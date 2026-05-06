@@ -229,4 +229,54 @@ public class XadrezLogica {
         return canonicos.toArray(new String[0]);
     }
 
+    /**
+     * Verifica se um jogador tem material suficiente para dar xeque-mate.
+     * Retorna false apenas nos casos de material insuficiente:
+     * - Rei vs Rei
+     * - Rei + Bispo vs Rei
+     * - Rei + Cavalo vs Rei
+     * - Rei + Bispo vs Rei + Bispo (bispos da mesma cor)
+     */
+    public static boolean temMaterialSuficiente(Board board, boolean brancas) {
+        com.github.bhlangonijr.chesslib.Side lado = brancas
+                ? com.github.bhlangonijr.chesslib.Side.WHITE
+                : com.github.bhlangonijr.chesslib.Side.BLACK;
+
+        long pecas = board.getBitboard(lado);
+        long reis = board.getBitboard(
+                com.github.bhlangonijr.chesslib.Piece.make(lado, com.github.bhlangonijr.chesslib.PieceType.KING));
+        long peoes = board.getBitboard(
+                com.github.bhlangonijr.chesslib.Piece.make(lado, com.github.bhlangonijr.chesslib.PieceType.PAWN));
+        long torres = board.getBitboard(
+                com.github.bhlangonijr.chesslib.Piece.make(lado, com.github.bhlangonijr.chesslib.PieceType.ROOK));
+        long damas = board.getBitboard(
+                com.github.bhlangonijr.chesslib.Piece.make(lado, com.github.bhlangonijr.chesslib.PieceType.QUEEN));
+        long bispos = board.getBitboard(
+                com.github.bhlangonijr.chesslib.Piece.make(lado, com.github.bhlangonijr.chesslib.PieceType.BISHOP));
+        long cavalos = board.getBitboard(
+                com.github.bhlangonijr.chesslib.Piece.make(lado, com.github.bhlangonijr.chesslib.PieceType.KNIGHT));
+
+        // Se tem peão, torre ou dama, sempre tem material suficiente
+        if (peoes != 0 || torres != 0 || damas != 0) {
+            return true;
+        }
+
+        // Conta bispos e cavalos
+        int numBispos = Long.bitCount(bispos);
+        int numCavalos = Long.bitCount(cavalos);
+
+        // Rei sozinho
+        if (numBispos == 0 && numCavalos == 0) {
+            return false;
+        }
+
+        // Rei + Bispo ou Rei + Cavalo
+        if ((numBispos == 1 && numCavalos == 0) || (numBispos == 0 && numCavalos == 1)) {
+            return false;
+        }
+
+        // Qualquer outra combinação tem material suficiente
+        return true;
+    }
+
 }

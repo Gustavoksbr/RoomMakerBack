@@ -539,6 +539,7 @@ class XadrezManagerIntegrationTest {
 
     // Helper para configurar e iniciar com notação específica
     private void configurarEIniciar(NotacaoXadrez notacao) {
-        xadrezManager.configurarEIniciar(SALA, DONO, DONO, DONO, PARTICIPANTE, notacao);
+        xadrezManager.configurarEIniciar(SALA, DONO, DONO, DONO, PARTICIPANTE, notacao,
+                null, null, null, null); // Sem controle de tempo
     }
 }

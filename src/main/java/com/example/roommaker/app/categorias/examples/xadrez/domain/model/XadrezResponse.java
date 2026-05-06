@@ -29,6 +29,15 @@ public class XadrezResponse {
     private Integer lancesIlegaisPretas;
     private Boolean vezDasBrancas;
 
+    // --- controle de tempo ---
+    private Integer tempoInicialBrancas; // segundos (null = infinito)
+    private Integer tempoInicialPretas; // segundos (null = infinito)
+    private Integer incrementoBrancas; // segundos
+    private Integer incrementoPretas; // segundos
+    private Integer tempoRestanteBrancas; // segundos
+    private Integer tempoRestantePretas; // segundos
+    private Long timestampUltimoLance; // milissegundos
+
     // --- tipo de evento (para o frontend saber o que aconteceu) ---
     private String evento; // LANCE, LANCE_ILEGAL, NOTACAO_INVALIDA, DESISTENCIA, EMPATE_PROPOSTO,
                            // EMPATE_ACEITO, EMPATE_RECUSADO, FIM, CONFIGURACAO_ALTERADA, PARTIDA_INICIADA
@@ -51,5 +60,11 @@ public class XadrezResponse {
         private String usernameBrancas;
         private String usernamePretas;
         private NotacaoXadrez notacao;
+
+        // Informações de tempo
+        private Integer tempoInicialBrancas; // segundos (null = infinito)
+        private Integer tempoInicialPretas; // segundos (null = infinito)
+        private Integer incrementoBrancas; // segundos
+        private Integer incrementoPretas; // segundos
     }
 }

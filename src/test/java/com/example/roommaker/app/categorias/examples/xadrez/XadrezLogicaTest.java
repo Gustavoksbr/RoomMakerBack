@@ -407,4 +407,107 @@ class XadrezLogicaTest {
                     "e4", "c5", "Nf3", "d6", "d4", "cd4", "Nd4"));
         }
     }
+
+    @Nested
+    @DisplayName("Material Suficiente")
+    class MaterialSuficiente {
+
+        @Test
+        @DisplayName("Posição inicial - ambos têm material suficiente")
+        void posicaoInicial() {
+            Board board = new Board();
+            assertTrue(XadrezLogica.temMaterialSuficiente(board, true));
+            assertTrue(XadrezLogica.temMaterialSuficiente(board, false));
+        }
+
+        @Test
+        @DisplayName("Rei vs Rei - nenhum tem material suficiente")
+        void reiVsRei() {
+            Board board = new Board();
+            board.loadFromFen("8/8/8/4k3/8/8/4K3/8 w - - 0 1");
+            assertFalse(XadrezLogica.temMaterialSuficiente(board, true));
+            assertFalse(XadrezLogica.temMaterialSuficiente(board, false));
+        }
+
+        @Test
+        @DisplayName("Rei + Bispo vs Rei - bispo não tem material suficiente")
+        void reiBispoVsRei() {
+            Board board = new Board();
+            board.loadFromFen("8/8/8/4k3/8/8/4KB2/8 w - - 0 1");
+            assertFalse(XadrezLogica.temMaterialSuficiente(board, true));
+            assertFalse(XadrezLogica.temMaterialSuficiente(board, false));
+        }
+
+        @Test
+        @DisplayName("Rei + Cavalo vs Rei - cavalo não tem material suficiente")
+        void reiCavaloVsRei() {
+            Board board = new Board();
+            board.loadFromFen("8/8/8/4k3/8/8/4KN2/8 w - - 0 1");
+            assertFalse(XadrezLogica.temMaterialSuficiente(board, true));
+            assertFalse(XadrezLogica.temMaterialSuficiente(board, false));
+        }
+
+        @Test
+        @DisplayName("Rei + 2 Cavalos vs Rei - tem material suficiente")
+        void reiDoisCavalosVsRei() {
+            Board board = new Board();
+            board.loadFromFen("8/8/8/4k3/8/8/3KNN2/8 w - - 0 1");
+            assertTrue(XadrezLogica.temMaterialSuficiente(board, true));
+            assertFalse(XadrezLogica.temMaterialSuficiente(board, false));
+        }
+
+        @Test
+        @DisplayName("Rei + Bispo + Cavalo vs Rei - tem material suficiente")
+        void reiBispoCavaloVsRei() {
+            Board board = new Board();
+            board.loadFromFen("8/8/8/4k3/8/8/3KBN2/8 w - - 0 1");
+            assertTrue(XadrezLogica.temMaterialSuficiente(board, true));
+            assertFalse(XadrezLogica.temMaterialSuficiente(board, false));
+        }
+
+        @Test
+        @DisplayName("Rei + Torre vs Rei - tem material suficiente")
+        void reiTorreVsRei() {
+            Board board = new Board();
+            board.loadFromFen("8/8/8/4k3/8/8/4KR2/8 w - - 0 1");
+            assertTrue(XadrezLogica.temMaterialSuficiente(board, true));
+            assertFalse(XadrezLogica.temMaterialSuficiente(board, false));
+        }
+
+        @Test
+        @DisplayName("Rei + Dama vs Rei - tem material suficiente")
+        void reiDamaVsRei() {
+            Board board = new Board();
+            board.loadFromFen("8/8/8/4k3/8/8/4KQ2/8 w - - 0 1");
+            assertTrue(XadrezLogica.temMaterialSuficiente(board, true));
+            assertFalse(XadrezLogica.temMaterialSuficiente(board, false));
+        }
+
+        @Test
+        @DisplayName("Rei + Peão vs Rei - tem material suficiente")
+        void reiPeaoVsRei() {
+            Board board = new Board();
+            board.loadFromFen("8/8/8/4k3/8/8/4KP2/8 w - - 0 1");
+            assertTrue(XadrezLogica.temMaterialSuficiente(board, true));
+            assertFalse(XadrezLogica.temMaterialSuficiente(board, false));
+        }
+
+        @Test
+        @DisplayName("Rei + 2 Bispos vs Rei - tem material suficiente")
+        void reiDoisBisposVsRei() {
+            Board board = new Board();
+            board.loadFromFen("8/8/8/4k3/8/8/3KBB2/8 w - - 0 1");
+            assertTrue(XadrezLogica.temMaterialSuficiente(board, true));
+            assertFalse(XadrezLogica.temMaterialSuficiente(board, false));
+        }
+
+        @Test
+        @DisplayName("Ambos com material insuficiente - Rei + Bispo vs Rei + Cavalo")
+        void ambosMaterialInsuficiente() {
+            Board board = new Board();
+            board.loadFromFen("8/8/8/4kn2/8/8/4KB2/8 w - - 0 1");
+            assertFalse(XadrezLogica.temMaterialSuficiente(board, true));
+            assertFalse(XadrezLogica.temMaterialSuficiente(board, false));
+        }
+    }
 }

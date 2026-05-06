@@ -113,7 +113,9 @@ public class XadrezManager implements JogoPort {
     // -------------------------------------------------------------------------
 
     public void configurarEIniciar(String nomeSala, String usernameDono, String username,
-            String usernameBrancas, String usernamePretas, NotacaoXadrez notacao) {
+            String usernameBrancas, String usernamePretas, NotacaoXadrez notacao,
+            Integer tempoInicialBrancas, Integer incrementoBrancas,
+            Integer tempoInicialPretas, Integer incrementoPretas) {
         Sala sala = salaManager.mostrarSala(nomeSala, usernameDono);
         validarDono(sala, username);
 
@@ -138,11 +140,24 @@ public class XadrezManager implements JogoPort {
         if (notacao != null)
             salaXadrez.setNotacao(notacao);
 
+        // Cria controle de tempo se configurado
+        ControleTempoXadrez controleTempo = null;
+        if (tempoInicialBrancas != null || tempoInicialPretas != null) {
+            controleTempo = ControleTempoXadrez.builder()
+                    .tempoInicialBrancas(tempoInicialBrancas)
+                    .tempoInicialPretas(tempoInicialPretas)
+                    .incrementoBrancas(incrementoBrancas != null ? incrementoBrancas : 0)
+                    .incrementoPretas(incrementoPretas != null ? incrementoPretas : 0)
+                    .build();
+            controleTempo.inicializar();
+        }
+
         PartidaXadrez partida = PartidaXadrez.builder()
                 .id(salaXadrez.getProximoIdPartida())
                 .usernameBrancas(usernameBrancas)
                 .usernamePretas(usernamePretas)
                 .notacao(notacao != null ? notacao : salaXadrez.getNotacao())
+                .controleTempo(controleTempo)
                 .build();
         salaXadrez.setProximoIdPartida(salaXadrez.getProximoIdPartida() + 1);
         salaXadrez.setPartidaAtual(partida);
@@ -165,6 +180,34 @@ public class XadrezManager implements JogoPort {
         String jogadorDaVez = vezBrancas ? salaXadrez.getUsernameBrancas() : salaXadrez.getUsernamePretas();
         if (!username.equals(jogadorDaVez)) {
             throw new ErroDeRequisicaoGeral("Não é a sua vez de jogar.");
+        }
+
+        // Atualiza tempo antes de processar o lance
+        if (partida.getControleTempo() != null && !partida.getControleTempo().tempoInfinito()) {
+            atualizarTempo(partida, vezBrancas);
+
+            // Verifica se o tempo esgotou
+            if (partida.getControleTempo().tempoEsgotado(vezBrancas)) {
+                // Verifica se o oponente tem material suficiente para dar mate
+                Board board = XadrezLogica.reconstruirBoard(partida.getLances(), salaXadrez.getNotacao());
+                boolean oponenteTemMaterial = XadrezLogica.temMaterialSuficiente(board, !vezBrancas);
+
+                ResultadoXadrez resultado;
+                MotivoXadrez motivo;
+                if (oponenteTemMaterial) {
+                    resultado = vezBrancas ? ResultadoXadrez.VITORIA_PRETAS : ResultadoXadrez.VITORIA_BRANCAS;
+                    motivo = MotivoXadrez.TEMPO_ESGOTADO;
+                } else {
+                    resultado = ResultadoXadrez.EMPATE;
+                    motivo = MotivoXadrez.TEMPO_ESGOTADO_MATERIAL_INSUFICIENTE;
+                }
+
+                partida.encerrar(resultado, motivo);
+                salaXadrez.arquivarPartida(partida);
+                repository.save(salaXadrez);
+                enviarParaTodos(sala, salaXadrez, "FIM");
+                throw new ErroDeRequisicaoGeral("Tempo esgotado!");
+            }
         }
 
         // Valida que o lance está na notação correta
@@ -207,6 +250,11 @@ public class XadrezManager implements JogoPort {
                 String sanArmazenada = NotacaoConverter.deIngles(sanCanonica, salaXadrez.getNotacao());
                 partida.getLances().add(sanArmazenada);
                 partida.setPropostaEmpate(null); // jogar cancela proposta de empate
+
+                // Adiciona incremento após o lance
+                if (partida.getControleTempo() != null && !partida.getControleTempo().tempoInfinito()) {
+                    adicionarIncremento(partida, vezBrancas);
+                }
 
                 ResultadoFim fim = XadrezLogica.verificarFim(board);
                 if (fim != null) {
@@ -354,6 +402,35 @@ public class XadrezManager implements JogoPort {
     // Helpers privados
     // -------------------------------------------------------------------------
 
+    private void atualizarTempo(PartidaXadrez partida, boolean vezBrancas) {
+        ControleTempoXadrez ct = partida.getControleTempo();
+        if (ct == null || ct.getTimestampUltimoLance() == null)
+            return;
+
+        long agora = System.currentTimeMillis();
+        long decorrido = (agora - ct.getTimestampUltimoLance()) / 1000; // segundos
+
+        if (vezBrancas && ct.getTempoRestanteBrancas() != null) {
+            ct.setTempoRestanteBrancas((int) (ct.getTempoRestanteBrancas() - decorrido));
+        } else if (!vezBrancas && ct.getTempoRestantePretas() != null) {
+            ct.setTempoRestantePretas((int) (ct.getTempoRestantePretas() - decorrido));
+        }
+
+        ct.setTimestampUltimoLance(agora);
+    }
+
+    private void adicionarIncremento(PartidaXadrez partida, boolean vezBrancas) {
+        ControleTempoXadrez ct = partida.getControleTempo();
+        if (ct == null)
+            return;
+
+        if (vezBrancas && ct.getTempoRestanteBrancas() != null) {
+            ct.setTempoRestanteBrancas(ct.getTempoRestanteBrancas() + ct.getIncrementoBrancas());
+        } else if (!vezBrancas && ct.getTempoRestantePretas() != null) {
+            ct.setTempoRestantePretas(ct.getTempoRestantePretas() + ct.getIncrementoPretas());
+        }
+    }
+
     private SalaXadrez obterSala(String nomeSala, String usernameDono) {
         SalaXadrez s = repository.findByNomeSalaAndUsernameDono(nomeSala, usernameDono);
         if (s == null)
@@ -418,6 +495,18 @@ public class XadrezManager implements JogoPort {
                     .lancesIlegaisBrancas(partida.getLancesIlegaisBrancas())
                     .lancesIlegaisPretas(partida.getLancesIlegaisPretas())
                     .vezDasBrancas(partida.vezDasBrancas());
+
+            // Adiciona informações de tempo se existir controle de tempo
+            if (partida.getControleTempo() != null) {
+                ControleTempoXadrez ct = partida.getControleTempo();
+                builder.tempoInicialBrancas(ct.getTempoInicialBrancas())
+                        .tempoInicialPretas(ct.getTempoInicialPretas())
+                        .incrementoBrancas(ct.getIncrementoBrancas())
+                        .incrementoPretas(ct.getIncrementoPretas())
+                        .tempoRestanteBrancas(ct.getTempoRestanteBrancas())
+                        .tempoRestantePretas(ct.getTempoRestantePretas())
+                        .timestampUltimoLance(ct.getTimestampUltimoLance());
+            }
         }
 
         // Histórico personalizado por username (ordem decrescente — última partida
@@ -425,18 +514,31 @@ public class XadrezManager implements JogoPort {
         if (username != null && salaXadrez.getHistoricoPorUsername().containsKey(username)) {
             List<XadrezResponse.PartidaXadrezResumo> historico = salaXadrez.getHistoricoPorUsername()
                     .get(username).stream()
-                    .map(p -> XadrezResponse.PartidaXadrezResumo.builder()
-                            .id(p.getId())
-                            .pgn(p.pgn())
-                            .lances(new ArrayList<>(p.getLances()))
-                            .resultado(p.getResultado() != null ? p.getResultado().name() : null)
-                            .motivo(p.getMotivo() != null ? p.getMotivo().name() : null)
-                            .lancesIlegaisBrancas(p.getLancesIlegaisBrancas())
-                            .lancesIlegaisPretas(p.getLancesIlegaisPretas())
-                            .usernameBrancas(p.getUsernameBrancas())
-                            .usernamePretas(p.getUsernamePretas())
-                            .notacao(p.getNotacao())
-                            .build())
+                    .map(p -> {
+                        XadrezResponse.PartidaXadrezResumo.PartidaXadrezResumoBuilder resumoBuilder = XadrezResponse.PartidaXadrezResumo
+                                .builder()
+                                .id(p.getId())
+                                .pgn(p.pgn())
+                                .lances(new ArrayList<>(p.getLances()))
+                                .resultado(p.getResultado() != null ? p.getResultado().name() : null)
+                                .motivo(p.getMotivo() != null ? p.getMotivo().name() : null)
+                                .lancesIlegaisBrancas(p.getLancesIlegaisBrancas())
+                                .lancesIlegaisPretas(p.getLancesIlegaisPretas())
+                                .usernameBrancas(p.getUsernameBrancas())
+                                .usernamePretas(p.getUsernamePretas())
+                                .notacao(p.getNotacao());
+
+                        // Adiciona informações de tempo no histórico
+                        if (p.getControleTempo() != null) {
+                            ControleTempoXadrez ct = p.getControleTempo();
+                            resumoBuilder.tempoInicialBrancas(ct.getTempoInicialBrancas())
+                                    .tempoInicialPretas(ct.getTempoInicialPretas())
+                                    .incrementoBrancas(ct.getIncrementoBrancas())
+                                    .incrementoPretas(ct.getIncrementoPretas());
+                        }
+
+                        return resumoBuilder.build();
+                    })
                     .sorted((a, b) -> Long.compare(b.getId(), a.getId()))
                     .collect(Collectors.toList());
             builder.historico(historico);

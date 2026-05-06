@@ -22,6 +22,9 @@ public class PartidaXadrez {
     /** Notação usada na partida (PORTUGUESA ou INGLESA) */
     private NotacaoXadrez notacao;
 
+    /** Controle de tempo da partida (null = sem controle de tempo) */
+    private ControleTempoXadrez controleTempo;
+
     @Builder.Default
     private List<String> lances = new ArrayList<>();
 

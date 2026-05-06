@@ -37,4 +37,10 @@ public class SalaXadrezRepository {
     public void deleteByNomeSalaAndUsernameDono(String nomeSala, String usernameDono) {
         mongo.deleteByNomeSalaAndUsernameDono(nomeSala, usernameDono);
     }
+
+    public java.util.List<SalaXadrez> findAll() {
+        return mongo.findAll().stream()
+                .map(SalaXadrezEntity::toDomain)
+                .collect(java.util.stream.Collectors.toList());
+    }
 }

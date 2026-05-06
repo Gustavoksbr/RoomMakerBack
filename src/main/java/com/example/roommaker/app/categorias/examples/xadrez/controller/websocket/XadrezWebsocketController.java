@@ -48,7 +48,9 @@ public class XadrezWebsocketController {
             @Payload XadrezConfigurarRequest request) {
         Contexto.setUsername(username);
         xadrezManager.configurarEIniciar(nomeSala, usernameDono, username,
-                request.getUsernameBrancas(), request.getUsernamePretas(), request.getNotacao());
+                request.getUsernameBrancas(), request.getUsernamePretas(), request.getNotacao(),
+                request.calcularTempoTotalBrancas(), request.getIncrementoBrancasSegundos(),
+                request.calcularTempoTotalPretas(), request.getIncrementoPretasSegundos());
     }
 
     @MessageMapping("/sala/{usernameDono}/{nomeSala}/{username}/xadrez/lance")

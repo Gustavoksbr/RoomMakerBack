@@ -3,6 +3,7 @@ package com.example.roommaker.app.categorias.examples.xadrez.domain;
 import com.example.roommaker.app.categorias.examples.JogoPort;
 import com.example.roommaker.app.categorias.examples.xadrez.domain.XadrezLogica.*;
 import com.example.roommaker.app.categorias.examples.xadrez.domain.model.*;
+import com.example.roommaker.app.categorias.examples.xadrez.domain.service.XadrezTempoService;
 import com.example.roommaker.app.categorias.examples.xadrez.repository.SalaXadrezRepository;
 import com.example.roommaker.app.categorias.examples.xadrez.sender.XadrezSender;
 import com.example.roommaker.app.domain.exceptions.ErroDeRequisicaoGeral;
@@ -11,24 +12,30 @@ import com.example.roommaker.app.domain.managers.sala.SalaManager;
 import com.example.roommaker.app.domain.models.Sala;
 import com.github.bhlangonijr.chesslib.Board;
 import com.github.bhlangonijr.chesslib.move.Move;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class XadrezManager implements JogoPort {
 
     private final SalaXadrezRepository repository;
     private final XadrezSender sender;
     private final SalaManager salaManager;
+    private final XadrezTempoService tempoService;
 
-    public XadrezManager(SalaXadrezRepository repository, XadrezSender sender, @Lazy SalaManager salaManager) {
+    public XadrezManager(SalaXadrezRepository repository, XadrezSender sender,
+            @Lazy SalaManager salaManager, XadrezTempoService tempoService) {
         this.repository = repository;
         this.sender = sender;
         this.salaManager = salaManager;
+        this.tempoService = tempoService;
     }
 
     // -------------------------------------------------------------------------
@@ -112,6 +119,7 @@ public class XadrezManager implements JogoPort {
     // Configurar e iniciar em um único passo
     // -------------------------------------------------------------------------
 
+    @Transactional
     public void configurarEIniciar(String nomeSala, String usernameDono, String username,
             String usernameBrancas, String usernamePretas, NotacaoXadrez notacao,
             Integer tempoInicialBrancas, Integer incrementoBrancas,
@@ -140,15 +148,13 @@ public class XadrezManager implements JogoPort {
         if (notacao != null)
             salaXadrez.setNotacao(notacao);
 
-        // Cria controle de tempo se configurado
-        ControleTempoXadrez controleTempo = null;
-        if (tempoInicialBrancas != null || tempoInicialPretas != null) {
-            controleTempo = ControleTempoXadrez.builder()
-                    .tempoInicialBrancas(tempoInicialBrancas)
-                    .tempoInicialPretas(tempoInicialPretas)
-                    .incrementoBrancas(incrementoBrancas != null ? incrementoBrancas : 0)
-                    .incrementoPretas(incrementoPretas != null ? incrementoPretas : 0)
-                    .build();
+        // Cria controle de tempo usando o serviço (converte segundos para
+        // milissegundos)
+        ControleTempoXadrez controleTempo = tempoService.criarControleTempo(
+                tempoInicialBrancas, incrementoBrancas,
+                tempoInicialPretas, incrementoPretas);
+
+        if (controleTempo != null) {
             controleTempo.inicializar();
         }
 
@@ -163,6 +169,10 @@ public class XadrezManager implements JogoPort {
         salaXadrez.setPartidaAtual(partida);
         repository.save(salaXadrez);
 
+        log.info("Partida iniciada na sala {}/{} - Brancas: {}, Pretas: {}, Tempo: {}",
+                usernameDono, nomeSala, usernameBrancas, usernamePretas,
+                controleTempo != null ? "configurado" : "infinito");
+
         enviarParaTodos(sala, salaXadrez, "PARTIDA_INICIADA");
     }
 
@@ -170,6 +180,7 @@ public class XadrezManager implements JogoPort {
     // Lance
     // -------------------------------------------------------------------------
 
+    @Transactional
     public void jogar(String nomeSala, String usernameDono, String username, String san) {
         Sala sala = salaManager.verificarSeUsuarioEstaNaSalaERetornarSala(nomeSala, usernameDono, username);
         SalaXadrez salaXadrez = obterSala(nomeSala, usernameDono);
@@ -182,32 +193,15 @@ public class XadrezManager implements JogoPort {
             throw new ErroDeRequisicaoGeral("Não é a sua vez de jogar.");
         }
 
-        // Atualiza tempo antes de processar o lance
-        if (partida.getControleTempo() != null && !partida.getControleTempo().tempoInfinito()) {
-            atualizarTempo(partida, vezBrancas);
-
-            // Verifica se o tempo esgotou
-            if (partida.getControleTempo().tempoEsgotado(vezBrancas)) {
-                // Verifica se o oponente tem material suficiente para dar mate
-                Board board = XadrezLogica.reconstruirBoard(partida.getLances(), salaXadrez.getNotacao());
-                boolean oponenteTemMaterial = XadrezLogica.temMaterialSuficiente(board, !vezBrancas);
-
-                ResultadoXadrez resultado;
-                MotivoXadrez motivo;
-                if (oponenteTemMaterial) {
-                    resultado = vezBrancas ? ResultadoXadrez.VITORIA_PRETAS : ResultadoXadrez.VITORIA_BRANCAS;
-                    motivo = MotivoXadrez.TEMPO_ESGOTADO;
-                } else {
-                    resultado = ResultadoXadrez.EMPATE;
-                    motivo = MotivoXadrez.TEMPO_ESGOTADO_MATERIAL_INSUFICIENTE;
-                }
-
-                partida.encerrar(resultado, motivo);
-                salaXadrez.arquivarPartida(partida);
-                repository.save(salaXadrez);
-                enviarParaTodos(sala, salaXadrez, "FIM");
-                throw new ErroDeRequisicaoGeral("Tempo esgotado!");
-            }
+        // EVENTO: Verifica timeout ANTES de processar o lance
+        XadrezTempoService.ResultadoTimeout timeout = tempoService.verificarTimeout(partida, salaXadrez);
+        if (timeout != null) {
+            partida.encerrar(timeout.resultado(), timeout.motivo());
+            tempoService.congelarTempo(partida);
+            salaXadrez.arquivarPartida(partida);
+            repository.save(salaXadrez);
+            enviarParaTodos(sala, salaXadrez, "FIM");
+            throw new ErroDeRequisicaoGeral("Tempo esgotado!");
         }
 
         // Valida que o lance está na notação correta
@@ -251,14 +245,14 @@ public class XadrezManager implements JogoPort {
                 partida.getLances().add(sanArmazenada);
                 partida.setPropostaEmpate(null); // jogar cancela proposta de empate
 
-                // Adiciona incremento após o lance
-                if (partida.getControleTempo() != null && !partida.getControleTempo().tempoInfinito()) {
-                    adicionarIncremento(partida, vezBrancas);
-                }
+                // EVENTO: Processa tempo após o lance (adiciona incremento e atualiza
+                // timestamp)
+                tempoService.processarAposLance(partida, vezBrancas);
 
                 ResultadoFim fim = XadrezLogica.verificarFim(board);
                 if (fim != null) {
                     partida.encerrar(fim.resultado(), fim.motivo());
+                    tempoService.congelarTempo(partida);
                     salaXadrez.arquivarPartida(partida);
                     repository.save(salaXadrez);
                     enviarParaTodos(sala, salaXadrez, "FIM");
@@ -402,35 +396,6 @@ public class XadrezManager implements JogoPort {
     // Helpers privados
     // -------------------------------------------------------------------------
 
-    private void atualizarTempo(PartidaXadrez partida, boolean vezBrancas) {
-        ControleTempoXadrez ct = partida.getControleTempo();
-        if (ct == null || ct.getTimestampUltimoLance() == null)
-            return;
-
-        long agora = System.currentTimeMillis();
-        long decorrido = (agora - ct.getTimestampUltimoLance()) / 1000; // segundos
-
-        if (vezBrancas && ct.getTempoRestanteBrancas() != null) {
-            ct.setTempoRestanteBrancas((int) (ct.getTempoRestanteBrancas() - decorrido));
-        } else if (!vezBrancas && ct.getTempoRestantePretas() != null) {
-            ct.setTempoRestantePretas((int) (ct.getTempoRestantePretas() - decorrido));
-        }
-
-        ct.setTimestampUltimoLance(agora);
-    }
-
-    private void adicionarIncremento(PartidaXadrez partida, boolean vezBrancas) {
-        ControleTempoXadrez ct = partida.getControleTempo();
-        if (ct == null)
-            return;
-
-        if (vezBrancas && ct.getTempoRestanteBrancas() != null) {
-            ct.setTempoRestanteBrancas(ct.getTempoRestanteBrancas() + ct.getIncrementoBrancas());
-        } else if (!vezBrancas && ct.getTempoRestantePretas() != null) {
-            ct.setTempoRestantePretas(ct.getTempoRestantePretas() + ct.getIncrementoPretas());
-        }
-    }
-
     private SalaXadrez obterSala(String nomeSala, String usernameDono) {
         SalaXadrez s = repository.findByNomeSalaAndUsernameDono(nomeSala, usernameDono);
         if (s == null)
@@ -499,12 +464,12 @@ public class XadrezManager implements JogoPort {
             // Adiciona informações de tempo se existir controle de tempo
             if (partida.getControleTempo() != null) {
                 ControleTempoXadrez ct = partida.getControleTempo();
-                builder.tempoInicialBrancas(ct.getTempoInicialBrancas())
-                        .tempoInicialPretas(ct.getTempoInicialPretas())
-                        .incrementoBrancas(ct.getIncrementoBrancas())
-                        .incrementoPretas(ct.getIncrementoPretas())
-                        .tempoRestanteBrancas(ct.getTempoRestanteBrancas())
-                        .tempoRestantePretas(ct.getTempoRestantePretas())
+                builder.tempoInicialBrancas(ct.getTempoInicialBrancasSegundos())
+                        .tempoInicialPretas(ct.getTempoInicialPretasSegundos())
+                        .incrementoBrancas(ct.getIncrementoBrancasSegundos())
+                        .incrementoPretas(ct.getIncrementoPretasSegundos())
+                        .tempoRestanteBrancas(ct.getTempoRestanteBrancasSegundos())
+                        .tempoRestantePretas(ct.getTempoRestantePretasSegundos())
                         .timestampUltimoLance(ct.getTimestampUltimoLance());
             }
         }
@@ -531,10 +496,10 @@ public class XadrezManager implements JogoPort {
                         // Adiciona informações de tempo no histórico
                         if (p.getControleTempo() != null) {
                             ControleTempoXadrez ct = p.getControleTempo();
-                            resumoBuilder.tempoInicialBrancas(ct.getTempoInicialBrancas())
-                                    .tempoInicialPretas(ct.getTempoInicialPretas())
-                                    .incrementoBrancas(ct.getIncrementoBrancas())
-                                    .incrementoPretas(ct.getIncrementoPretas());
+                            resumoBuilder.tempoInicialBrancas(ct.getTempoInicialBrancasSegundos())
+                                    .tempoInicialPretas(ct.getTempoInicialPretasSegundos())
+                                    .incrementoBrancas(ct.getIncrementoBrancasSegundos())
+                                    .incrementoPretas(ct.getIncrementoPretasSegundos());
                         }
 
                         return resumoBuilder.build();

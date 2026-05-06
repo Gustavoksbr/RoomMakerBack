@@ -29,13 +29,13 @@ public class PartidaXadrezEntity {
         private String usernamePretas;
         private String notacao; // PORTUGUESA ou INGLESA
 
-        // Campos de controle de tempo
-        private Integer tempoInicialBrancas;
-        private Integer tempoInicialPretas;
-        private Integer incrementoBrancas;
-        private Integer incrementoPretas;
-        private Integer tempoRestanteBrancas;
-        private Integer tempoRestantePretas;
+        // Campos de controle de tempo (em milissegundos)
+        private Long tempoInicialBrancas;
+        private Long tempoInicialPretas;
+        private Long incrementoBrancas;
+        private Long incrementoPretas;
+        private Long tempoRestanteBrancas;
+        private Long tempoRestantePretas;
         private Long timestampUltimoLance;
 
         public static PartidaXadrezEntity fromDomain(PartidaXadrez p) {
@@ -89,8 +89,8 @@ public class PartidaXadrezEntity {
                         ControleTempoXadrez ct = ControleTempoXadrez.builder()
                                         .tempoInicialBrancas(this.tempoInicialBrancas)
                                         .tempoInicialPretas(this.tempoInicialPretas)
-                                        .incrementoBrancas(this.incrementoBrancas != null ? this.incrementoBrancas : 0)
-                                        .incrementoPretas(this.incrementoPretas != null ? this.incrementoPretas : 0)
+                                        .incrementoBrancas(this.incrementoBrancas != null ? this.incrementoBrancas : 0L)
+                                        .incrementoPretas(this.incrementoPretas != null ? this.incrementoPretas : 0L)
                                         .tempoRestanteBrancas(this.tempoRestanteBrancas)
                                         .tempoRestantePretas(this.tempoRestantePretas)
                                         .timestampUltimoLance(this.timestampUltimoLance)

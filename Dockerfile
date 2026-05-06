@@ -1,5 +1,5 @@
 # ---- Build ----
-FROM gradle:8.5-jdk21 AS build
+FROM gradle:7.6.2-jdk17 AS build
 
 WORKDIR /app
 
@@ -13,7 +13,7 @@ RUN ./gradlew bootJar --no-daemon
 
 
 # ---- Runtime ----
-FROM eclipse-temurin:21-jre-alpine AS runtime
+FROM eclipse-temurin:17-jre-alpine AS runtime
 
 WORKDIR /app
 

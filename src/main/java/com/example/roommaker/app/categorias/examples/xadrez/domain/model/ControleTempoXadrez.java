@@ -160,19 +160,23 @@ public class ControleTempoXadrez {
     }
 
     /**
-     * Converte milissegundos para segundos (para compatibilidade com API antiga).
+     * Retorna o tempo restante das brancas em segundos NO MOMENTO DO ÚLTIMO LANCE.
+     * O frontend usa este valor junto com timestampUltimoLance para calcular o
+     * tempo atual dinamicamente. NÃO desconta o tempo decorrido desde o último
+     * lance.
      */
     public Integer getTempoRestanteBrancasSegundos() {
-        Long tempo = getTempoRestanteAtual(true);
-        return tempo != null ? (int) (tempo / 1000) : null;
+        return tempoRestanteBrancas != null ? (int) (tempoRestanteBrancas / 1000) : null;
     }
 
     /**
-     * Converte milissegundos para segundos (para compatibilidade com API antiga).
+     * Retorna o tempo restante das pretas em segundos NO MOMENTO DO ÚLTIMO LANCE.
+     * O frontend usa este valor junto com timestampUltimoLance para calcular o
+     * tempo atual dinamicamente. NÃO desconta o tempo decorrido desde o último
+     * lance.
      */
     public Integer getTempoRestantePretasSegundos() {
-        Long tempo = getTempoRestanteAtual(false);
-        return tempo != null ? (int) (tempo / 1000) : null;
+        return tempoRestantePretas != null ? (int) (tempoRestantePretas / 1000) : null;
     }
 
     /**

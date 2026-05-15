@@ -5,6 +5,7 @@ import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.CompoundIndexes;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
@@ -42,9 +43,11 @@ public class SalaEntity {
     private Boolean disponivel;
 
     @Field("username_participantes")
+    @Indexed
     private List<String> usernameParticipantes;
 
-    public SalaEntity(Sala sala) {;
+    public SalaEntity(Sala sala) {
+        ;
         this.usernameDono = sala.getUsernameDono();
         this.nome = sala.getNome();
         this.categoria = sala.getCategoria();
@@ -56,14 +59,17 @@ public class SalaEntity {
 
     public SalaEntity() {
     }
-    public void addParticipante(String username){
+
+    public void addParticipante(String username) {
         this.usernameParticipantes.add(username);
     }
-    public void removeParticipante(String username){
+
+    public void removeParticipante(String username) {
         this.usernameParticipantes.remove(username);
     }
 
     public Sala toSala() {
-        return new Sala(this.id, this.usernameDono, this.nome, this.categoria, this.senha, this.qtdCapacidade, this.disponivel,this.usernameParticipantes);
+        return new Sala(this.id, this.usernameDono, this.nome, this.categoria, this.senha, this.qtdCapacidade,
+                this.disponivel, this.usernameParticipantes);
     }
 }

@@ -227,6 +227,14 @@ public class XadrezManager implements JogoPort {
                         username, salaXadrez, "NOTACAO_INVALIDA");
                 throw new ErroDeRequisicaoGeral("Notação inválida: '" + san + "'. Use SAN (ex: e4, Nf3, O-O).");
             }
+            case LANCE_AMBIGUO -> {
+                // Lance ambíguo é tratado como ilegal e penaliza
+                partida.incrementarIlegais(vezBrancas);
+                repository.save(salaXadrez);
+                enviarParaTodos(sala, salaXadrez, "LANCE_ILEGAL");
+                throw new ErroDeRequisicaoGeral(
+                        "Lance ambíguo: '" + san + "'. Especifique qual peça mover.");
+            }
             case LANCE_ILEGAL -> {
                 partida.incrementarIlegais(vezBrancas);
                 repository.save(salaXadrez);

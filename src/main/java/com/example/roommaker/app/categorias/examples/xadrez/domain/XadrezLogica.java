@@ -31,10 +31,20 @@ public class XadrezLogica {
         Move m = parseSan(board, entrada);
         if (m != null)
             return m;
+
+        // Tenta resolver com desambiguação manual
+        m = tentarResolverComDesambiguacao(board, entrada);
+        if (m != null)
+            return m;
+
         Matcher mat = CAPTURA_SEM_X.matcher(entrada);
         if (mat.matches()) {
             String comX = mat.group(1) + "x" + mat.group(2);
             m = parseSan(board, comX);
+            if (m != null)
+                return m;
+            // Tenta com desambiguação manual também
+            m = tentarResolverComDesambiguacao(board, comX);
             if (m != null)
                 return m;
         }
@@ -55,15 +65,106 @@ public class XadrezLogica {
         }
     }
 
+    /**
+     * Verifica se há ambiguidade não resolvida na notação.
+     * Retorna true se múltiplas peças do mesmo tipo podem ir para o destino
+     * e o usuário não especificou qual peça mover (sem desambiguação).
+     */
+    private static boolean temAmbiguidadeNaoResolvida(Board board, String entrada, Move moveResolvido) {
+        // Remove sufixos como +, #, !, ?
+        String entradaLimpa = entrada.trim().replaceAll("[+#!?]+$", "");
+
+        // Identifica o tipo de peça e casa de destino
+        char primeiroCar = entradaLimpa.charAt(0);
+
+        // Peões não têm ambiguidade do tipo que estamos procurando
+        // (capturas de peão já exigem a coluna de origem)
+        if (Character.isLowerCase(primeiroCar)) {
+            return false;
+        }
+
+        // Roque não tem ambiguidade
+        if (entradaLimpa.startsWith("O-O")) {
+            return false;
+        }
+
+        // Verifica se é movimento de peça (K, Q, R, B, N)
+        if (!"KQRBN".contains(String.valueOf(primeiroCar))) {
+            return false;
+        }
+
+        // Rei não pode ter ambiguidade (só existe um)
+        if (primeiroCar == 'K') {
+            return false;
+        }
+
+        // Verifica se já tem desambiguação (coluna, linha ou ambos)
+        // Exemplos: Nbd7 (tem 'b'), N1d7 (tem '1'), Nb1d7 (tem 'b1')
+        // Formato: [Peça][desambiguação?][x?][destino]
+        // Padrões possíveis:
+        // - Nf3 (sem desambiguação)
+        // - Ngf3 (desambiguação de coluna)
+        // - N1f3 (desambiguação de linha)
+        // - Ng1f3 (desambiguação completa)
+        // - Nxf3 (captura sem desambiguação)
+        // - Ngxf3 (captura com desambiguação)
+
+        // Remove o 'x' se houver para facilitar a análise
+        String semCaptura = entradaLimpa.replace("x", "");
+
+        // Formato: [Peça][destino] sem desambiguação
+        // Exemplo: Nf3, Rd1, Qd4
+        Pattern semDesambiguacao = Pattern.compile("^[QRBN][a-h][1-8]$");
+        if (semDesambiguacao.matcher(semCaptura).matches()) {
+            // Não tem desambiguação, precisa verificar se há ambiguidade
+            // Continua para a verificação abaixo
+        } else {
+            // Tem desambiguação (ou formato diferente), não é ambíguo
+            return false;
+        }
+
+        // Agora verifica se há múltiplas peças do mesmo tipo que podem ir para o
+        // destino
+        List<Move> movimentosLegais = MoveGenerator.generateLegalMoves(board);
+
+        // Filtra movimentos que vão para o mesmo destino e são da mesma peça
+        com.github.bhlangonijr.chesslib.Square destino = moveResolvido.getTo();
+        com.github.bhlangonijr.chesslib.Piece pecaMovida = board.getPiece(moveResolvido.getFrom());
+
+        int contagem = 0;
+        for (Move m : movimentosLegais) {
+            if (m.getTo().equals(destino)) {
+                com.github.bhlangonijr.chesslib.Piece peca = board.getPiece(m.getFrom());
+                if (peca.equals(pecaMovida)) {
+                    contagem++;
+                }
+            }
+        }
+
+        // Se mais de uma peça do mesmo tipo pode ir para o destino, há ambiguidade
+        return contagem > 1;
+    }
+
     public static Classificacao classificarEntrada(Board board, String entrada) {
         if (entrada == null || entrada.isBlank()) {
             return new Classificacao(TipoEntrada.NOTACAO_INVALIDA, null);
         }
         Move move = resolverMove(board, entrada);
-        if (move != null)
+        if (move != null) {
+            // Verifica se há ambiguidade não resolvida
+            if (temAmbiguidadeNaoResolvida(board, entrada, move)) {
+                return new Classificacao(TipoEntrada.LANCE_AMBIGUO, null);
+            }
             return new Classificacao(TipoEntrada.VALIDO, move);
+        }
 
+        // Se o move é null, pode ser porque é ambíguo ou ilegal
+        // Verifica se é um lance potencialmente ambíguo
         String semSufixo = entrada.trim().replaceAll("[+#!?]+$", "");
+        if (podeSerLanceAmbiguo(board, semSufixo)) {
+            return new Classificacao(TipoEntrada.LANCE_AMBIGUO, null);
+        }
+
         if (SAN_LIBERAL.matcher(semSufixo).matches()) {
             return new Classificacao(TipoEntrada.LANCE_ILEGAL, null);
         }
@@ -75,6 +176,168 @@ public class XadrezLogica {
             }
         }
         return new Classificacao(TipoEntrada.NOTACAO_INVALIDA, null);
+    }
+
+    /**
+     * Verifica se uma entrada que não foi resolvida pode ser um lance ambíguo.
+     * Isso acontece quando a notação está correta mas falta desambiguação.
+     */
+    private static boolean podeSerLanceAmbiguo(Board board, String entrada) {
+        // Remove o 'x' se houver
+        String semCaptura = entrada.replace("x", "");
+
+        // Verifica se é um movimento de peça sem desambiguação
+        // Formato: [Peça][destino] (ex: Rd1, Qd4, Bd3, Nf3)
+        Pattern semDesambiguacao = Pattern.compile("^[QRBN]([a-h][1-8])$");
+        Matcher matcher = semDesambiguacao.matcher(semCaptura);
+
+        if (!matcher.matches()) {
+            return false;
+        }
+
+        char tipoPeca = semCaptura.charAt(0);
+        String destinoStr = matcher.group(1);
+
+        // Converte o destino para Square
+        com.github.bhlangonijr.chesslib.Square destino;
+        try {
+            destino = com.github.bhlangonijr.chesslib.Square.valueOf(destinoStr.toUpperCase());
+        } catch (Exception e) {
+            return false;
+        }
+
+        // Determina o tipo de peça
+        com.github.bhlangonijr.chesslib.PieceType pieceType;
+        switch (tipoPeca) {
+            case 'Q':
+                pieceType = com.github.bhlangonijr.chesslib.PieceType.QUEEN;
+                break;
+            case 'R':
+                pieceType = com.github.bhlangonijr.chesslib.PieceType.ROOK;
+                break;
+            case 'B':
+                pieceType = com.github.bhlangonijr.chesslib.PieceType.BISHOP;
+                break;
+            case 'N':
+                pieceType = com.github.bhlangonijr.chesslib.PieceType.KNIGHT;
+                break;
+            default:
+                return false;
+        }
+
+        // Conta quantas peças do mesmo tipo podem ir para o destino
+        List<Move> movimentosLegais = MoveGenerator.generateLegalMoves(board);
+        com.github.bhlangonijr.chesslib.Piece pecaProcurada = com.github.bhlangonijr.chesslib.Piece
+                .make(board.getSideToMove(), pieceType);
+
+        int contagem = 0;
+        for (Move m : movimentosLegais) {
+            if (m.getTo().equals(destino)) {
+                com.github.bhlangonijr.chesslib.Piece peca = board.getPiece(m.getFrom());
+                if (peca.equals(pecaProcurada)) {
+                    contagem++;
+                }
+            }
+        }
+
+        // Se mais de uma peça do mesmo tipo pode ir para o destino, é ambíguo
+        return contagem > 1;
+    }
+
+    /**
+     * Tenta resolver um movimento com desambiguação manual.
+     * Usado quando o parseSan falha, mas a notação parece válida.
+     */
+    private static Move tentarResolverComDesambiguacao(Board board, String entrada) {
+        // Remove sufixos e 'x'
+        String limpo = entrada.trim().replaceAll("[+#!?]+$", "").replace("x", "");
+
+        // Padrão para movimento com desambiguação: [Peça][coluna?][linha?][destino]
+        // Exemplos: Rad1, R1d1, Ra1d1, Nbd7, N1f3, Ke2
+        Pattern comDesambiguacao = Pattern.compile("^([KQRBN])([a-h])?([1-8])?([a-h][1-8])$");
+        Matcher matcher = comDesambiguacao.matcher(limpo);
+
+        if (!matcher.matches()) {
+            return null;
+        }
+
+        char tipoPeca = matcher.group(1).charAt(0);
+        String colunaOrigem = matcher.group(2); // pode ser null
+        String linhaOrigem = matcher.group(3); // pode ser null
+        String destinoStr = matcher.group(4);
+
+        // Converte o destino
+        com.github.bhlangonijr.chesslib.Square destino;
+        try {
+            destino = com.github.bhlangonijr.chesslib.Square.valueOf(destinoStr.toUpperCase());
+        } catch (Exception e) {
+            return null;
+        }
+
+        // Determina o tipo de peça
+        com.github.bhlangonijr.chesslib.PieceType pieceType;
+        switch (tipoPeca) {
+            case 'K':
+                pieceType = com.github.bhlangonijr.chesslib.PieceType.KING;
+                break;
+            case 'Q':
+                pieceType = com.github.bhlangonijr.chesslib.PieceType.QUEEN;
+                break;
+            case 'R':
+                pieceType = com.github.bhlangonijr.chesslib.PieceType.ROOK;
+                break;
+            case 'B':
+                pieceType = com.github.bhlangonijr.chesslib.PieceType.BISHOP;
+                break;
+            case 'N':
+                pieceType = com.github.bhlangonijr.chesslib.PieceType.KNIGHT;
+                break;
+            default:
+                return null;
+        }
+
+        // Busca o movimento correto
+        List<Move> movimentosLegais = MoveGenerator.generateLegalMoves(board);
+        com.github.bhlangonijr.chesslib.Piece pecaProcurada = com.github.bhlangonijr.chesslib.Piece.make(
+                board.getSideToMove(),
+                pieceType);
+
+        Move movimentoEncontrado = null;
+        for (Move m : movimentosLegais) {
+            if (!m.getTo().equals(destino)) {
+                continue;
+            }
+
+            com.github.bhlangonijr.chesslib.Piece peca = board.getPiece(m.getFrom());
+            if (!peca.equals(pecaProcurada)) {
+                continue;
+            }
+
+            // Verifica desambiguação de coluna
+            if (colunaOrigem != null) {
+                String colunaMovimento = m.getFrom().getFile().getNotation();
+                if (!colunaMovimento.equals(colunaOrigem)) {
+                    continue;
+                }
+            }
+
+            // Verifica desambiguação de linha
+            if (linhaOrigem != null) {
+                String linhaMovimento = m.getFrom().getRank().getNotation();
+                if (!linhaMovimento.equals(linhaOrigem)) {
+                    continue;
+                }
+            }
+
+            // Se já encontramos um movimento e encontramos outro, há ambiguidade
+            if (movimentoEncontrado != null) {
+                return null; // Ambíguo
+            }
+
+            movimentoEncontrado = m;
+        }
+
+        return movimentoEncontrado;
     }
 
     public static ResultadoFim verificarFim(Board board) {
@@ -171,7 +434,7 @@ public class XadrezLogica {
     }
 
     public enum TipoEntrada {
-        VALIDO, LANCE_ILEGAL, NOTACAO_INVALIDA
+        VALIDO, LANCE_ILEGAL, NOTACAO_INVALIDA, LANCE_AMBIGUO
     }
 
     public record Classificacao(TipoEntrada tipo, Move move) {

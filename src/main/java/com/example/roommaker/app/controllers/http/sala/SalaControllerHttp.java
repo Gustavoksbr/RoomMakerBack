@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/salas")
@@ -129,5 +130,11 @@ public class SalaControllerHttp {
         String novaSenha = (body.getSenha() == null || body.getSenha().isBlank()) ? null : body.getSenha();
         Sala sala = this.salaManager.alterarSenha(usernameDono, nomeSala, novaSenha, username);
         return ResponseEntity.ok(new SalaResponse(sala));
+    }
+
+    @GetMapping("/online-users")
+    public ResponseEntity<Set<String>> getUsuariosOnline() {
+        Set<String> usuariosOnline = this.salaManager.getUsuariosOnline();
+        return ResponseEntity.ok(usuariosOnline);
     }
 }

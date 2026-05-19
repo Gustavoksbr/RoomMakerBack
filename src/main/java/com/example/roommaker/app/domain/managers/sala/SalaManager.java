@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class SalaManager {
@@ -52,6 +53,11 @@ public class SalaManager {
         this.categoriaService.validarSalaParaOJogo(sala);
         Sala salaCriada = this.salaRepository.criar(sala);
         categoriaService.aposCriacaoDaSala(salaCriada);
+
+        // Notifica usuários online sobre nova sala
+        this.webSocketSender.notificarAtualizacaoDeSalasParaUsuariosOnline("CRIADA",
+                new com.example.roommaker.app.controllers.http.sala.dtos.SalaResponse(salaCriada));
+
         return salaCriada;
     }
 
@@ -73,6 +79,11 @@ public class SalaManager {
         ouvintes.add(usernameDono);
         this.webSocketSender.enviarMensagemParaSala(sala.getUsernameDono(), sala.getNome(), "sala", ouvintes,
                 sala.getUsernameParticipantes());
+
+        // Notifica usuários online sobre sala atualizada
+        this.webSocketSender.notificarAtualizacaoDeSalasParaUsuariosOnline("ATUALIZADA",
+                new com.example.roommaker.app.controllers.http.sala.dtos.SalaResponse(sala));
+
         return sala;
     }
 
@@ -97,6 +108,10 @@ public class SalaManager {
 
         this.salaRepository.excluirSala(usernameDono, nomeSala);
         this.categoriaService.excluirJogo(sala);
+
+        // Notifica usuários online sobre sala deletada
+        this.webSocketSender.notificarAtualizacaoDeSalasParaUsuariosOnline("DELETADA",
+                new com.example.roommaker.app.controllers.http.sala.dtos.SalaResponse(sala));
     }
 
     @Transactional
@@ -119,6 +134,11 @@ public class SalaManager {
         ouvintes.add(usernameSaindo);
         this.webSocketSender.enviarMensagemParaSala(sala.getUsernameDono(), sala.getNome(), "sala", ouvintes,
                 sala.getUsernameParticipantes());
+
+        // Notifica usuários online sobre sala atualizada
+        this.webSocketSender.notificarAtualizacaoDeSalasParaUsuariosOnline("ATUALIZADA",
+                new com.example.roommaker.app.controllers.http.sala.dtos.SalaResponse(sala));
+
         return sala;
     }
 
@@ -138,7 +158,13 @@ public class SalaManager {
                             + totalAtual + "). Expulse alguns jogadores antes de reduzir a capacidade.");
         }
 
-        return this.salaRepository.alterarCapacidade(usernameDono, nomeSala, novaCapacidade);
+        Sala salaAtualizada = this.salaRepository.alterarCapacidade(usernameDono, nomeSala, novaCapacidade);
+
+        // Notifica usuários online sobre sala atualizada
+        this.webSocketSender.notificarAtualizacaoDeSalasParaUsuariosOnline("ATUALIZADA",
+                new com.example.roommaker.app.controllers.http.sala.dtos.SalaResponse(salaAtualizada));
+
+        return salaAtualizada;
     }
 
     public String verSenha(String usernameDono, String nomeSala, String username) {
@@ -153,6 +179,26 @@ public class SalaManager {
         if (!usernameDono.equals(username)) {
             throw new UsuarioNaoAutorizado("Apenas o dono da sala pode alterar a senha!");
         }
-        return this.salaRepository.alterarSenha(usernameDono, nomeSala, novaSenha);
+        Sala salaAtualizada = this.salaRepository.alterarSenha(usernameDono, nomeSala, novaSenha);
+
+        // Notifica usuários online sobre sala atualizada
+        this.webSocketSender.notificarAtualizacaoDeSalasParaUsuariosOnline("ATUALIZADA",
+                new com.example.roommaker.app.controllers.http.sala.dtos.SalaResponse(salaAtualizada));
+
+        return salaAtualizada;
+    }
+
+    /**
+     * Retorna lista de usuários online
+     */
+    public Set<String> getUsuariosOnline() {
+        return this.webSocketSender.getUsuariosOnline();
+    }
+
+    /**
+     * Verifica se um usuário está online
+     */
+    public boolean isUsuarioOnline(String username) {
+        return this.webSocketSender.isUsuarioOnline(username);
     }
 }

@@ -8,16 +8,10 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 import java.util.Optional;
 
-public interface MongoSalaRepository extends MongoRepository<SalaEntity, Long> {
+public interface MongoSalaRepository extends MongoRepository<SalaEntity, String> {
     Optional<SalaEntity> findByNomeAndUsernameDono(String nome, String usernameDono);
 
     Boolean existsByNomeAndUsernameDono(String nome, String usernameDono);
-
-    @Query("{ '$or': [ { 'nome': { '$regex': ?0, '$options': 'i' } }, { 'username_dono': { '$regex': ?0, '$options': 'i' } }, { 'categoria': { '$regex': ?0, '$options': 'i' } } ] }")
-    List<SalaEntity> findSubstring(@Param("procurado") String procurado);
-
-    @Query("{ 'username_dono': ?0, 'nome': ?1, 'categoria': ?2 }")
-    List<SalaEntity> findByUsernameDonoAndNomeAndCategoria(@Param("usernameDono") String usernameDono, @Param("nome") String nome, @Param("categoria") String categoria);
 
     List<SalaEntity> findByUsernameDono(String usernameDono);
 
@@ -25,8 +19,6 @@ public interface MongoSalaRepository extends MongoRepository<SalaEntity, Long> {
     List<SalaEntity> findByParticipante(String participante);
 
     @Query("{ 'username_dono': { '$regex': ?0, '$options': 'i' }, 'nome': { '$regex': ?1, '$options': 'i' }, 'categoria': { '$regex': ?2, '$options': 'i' } }")
-    List<SalaEntity> findByUsernameDonoAndNomeAndCategoriaSubstring(@Param("usernameDono") String usernameDono, @Param("nome") String nome, @Param("categoria") String categoria);
-
-//    @Query("{ 'username_dono': { '$regex': ?0, '$options': 'i' }, 'nome': { '$regex': ?1, '$options': 'i' }, 'categoria': { '$regex': ?2, '$options': 'i' } }")
-//    List<SalaEntity> findByUsernameDonoAndNomeAndCategoriaSubstring(@Param("usernameDono") String usernameDono, @Param("nome") String nome, @Param("categoria") String categoria);
+    List<SalaEntity> findByUsernameDonoAndNomeAndCategoriaSubstring(@Param("usernameDono") String usernameDono,
+            @Param("nome") String nome, @Param("categoria") String categoria);
 }

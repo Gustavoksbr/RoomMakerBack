@@ -510,4 +510,153 @@ class XadrezLogicaTest {
             assertFalse(XadrezLogica.temMaterialSuficiente(board, false));
         }
     }
+
+    // =========================================================================
+    // Detecção de Ambiguidade
+    // =========================================================================
+
+    @Nested
+    @DisplayName("Detecção de Ambiguidade")
+    class DeteccaoAmbiguidade {
+
+        @Test
+        @DisplayName("Nf3 sem ambiguidade: VALIDO")
+        void cavaloSemAmbiguidade() {
+            Board board = new Board();
+            Classificacao c = XadrezLogica.classificarEntrada(board, "Nf3");
+            assertEquals(TipoEntrada.VALIDO, c.tipo());
+            assertNotNull(c.move());
+        }
+
+        @Test
+        @DisplayName("Nf3 com dois cavalos que podem ir para f3 sem desambiguação: LANCE_AMBIGUO")
+        void cavaloComAmbiguidade() {
+            // Posição onde cavalos em g1 e d2 podem ir para f3
+            Board board = new Board();
+            board.loadFromFen("rnbqkbnr/pppppppp/8/8/8/8/PPPNPPPP/R1BQKBNR w KQkq - 0 1");
+            Classificacao c = XadrezLogica.classificarEntrada(board, "Nf3");
+            assertEquals(TipoEntrada.LANCE_AMBIGUO, c.tipo());
+            assertNull(c.move());
+        }
+
+        @Test
+        @DisplayName("Ngf3 com desambiguação de coluna: VALIDO")
+        void cavaloComDesambiguacaoColuna() {
+            Board board = new Board();
+            board.loadFromFen("rnbqkbnr/pppppppp/8/8/8/8/PPPNPPPP/R1BQKBNR w KQkq - 0 1");
+            Classificacao c = XadrezLogica.classificarEntrada(board, "Ngf3");
+            assertEquals(TipoEntrada.VALIDO, c.tipo());
+            assertNotNull(c.move());
+        }
+
+        @Test
+        @DisplayName("Ndf3 com desambiguação de coluna: VALIDO")
+        void cavaloComDesambiguacaoColuna2() {
+            Board board = new Board();
+            board.loadFromFen("rnbqkbnr/pppppppp/8/8/8/8/PPPNPPPP/R1BQKBNR w KQkq - 0 1");
+            Classificacao c = XadrezLogica.classificarEntrada(board, "Ndf3");
+            assertEquals(TipoEntrada.VALIDO, c.tipo());
+            assertNotNull(c.move());
+        }
+
+        @Test
+        @DisplayName("Rd1 com duas torres que podem ir para d1 sem desambiguação: LANCE_ILEGAL")
+        void torreComAmbiguidade() {
+            // Torres em a1 e h1 podem ir para d1
+            Board board = new Board();
+            board.loadFromFen("4k3/8/8/8/8/8/8/R2K3R w - - 0 1");
+            Classificacao c = XadrezLogica.classificarEntrada(board, "Rd1");
+            assertEquals(TipoEntrada.LANCE_ILEGAL, c.tipo());
+            assertNull(c.move());
+        }
+
+        @Test
+        @DisplayName("Rad1 com desambiguação de coluna: LANCE_ILEGAL")
+        void torreComDesambiguacaoColuna() {
+            Board board = new Board();
+            board.loadFromFen("4k3/8/8/8/8/8/8/R2K3R w - - 0 1");
+            Classificacao c = XadrezLogica.classificarEntrada(board, "Rad1");
+            assertEquals(TipoEntrada.LANCE_ILEGAL, c.tipo());
+            assertNull(c.move());
+        }
+
+        @Test
+        @DisplayName("Rhd1 com desambiguação de coluna: LANCE_ILEGAL")
+        void torreComDesambiguacaoColuna2() {
+            Board board = new Board();
+            board.loadFromFen("4k3/8/8/8/8/8/8/R2K3R w - - 0 1");
+            Classificacao c = XadrezLogica.classificarEntrada(board, "Rhd1");
+            assertEquals(TipoEntrada.LANCE_ILEGAL, c.tipo());
+            assertNull(c.move());
+        }
+
+        @Test
+        @DisplayName("Qd4 com duas damas que podem ir para d4 sem desambiguação: LANCE_AMBIGUO")
+        void damaComAmbiguidade() {
+            // Damas em d1 e d8 podem ir para d4 (posição artificial)
+            Board board = new Board();
+            board.loadFromFen("3Qk3/8/8/8/8/8/8/3QK3 w - - 0 1");
+            Classificacao c = XadrezLogica.classificarEntrada(board, "Qd4");
+            assertEquals(TipoEntrada.LANCE_AMBIGUO, c.tipo());
+            assertNull(c.move());
+        }
+
+        @Test
+        @DisplayName("Q1d4 com desambiguação de linha: VALIDO")
+        void damaComDesambiguacaoLinha() {
+            Board board = new Board();
+            board.loadFromFen("3Qk3/8/8/8/8/8/8/3QK3 w - - 0 1");
+            Classificacao c = XadrezLogica.classificarEntrada(board, "Q1d4");
+            assertEquals(TipoEntrada.VALIDO, c.tipo());
+            assertNotNull(c.move());
+        }
+
+        @Test
+        @DisplayName("Bd3 com dois bispos que podem ir para d3 sem desambiguação: LANCE_AMBIGUO")
+        void bispoComAmbiguidade() {
+            // Bispos em a6 e f1 podem ir para d3
+            Board board = new Board();
+            board.loadFromFen("4k3/8/B7/8/8/8/8/4KB2 w - - 0 1");
+            Classificacao c = XadrezLogica.classificarEntrada(board, "Bd3");
+            assertEquals(TipoEntrada.LANCE_AMBIGUO, c.tipo());
+            assertNull(c.move());
+        }
+
+        @Test
+        @DisplayName("Bfd3 com desambiguação de coluna: VALIDO")
+        void bispoComDesambiguacaoColuna() {
+            Board board = new Board();
+            board.loadFromFen("4k3/8/B7/8/8/8/8/4KB2 w - - 0 1");
+            Classificacao c = XadrezLogica.classificarEntrada(board, "Bfd3");
+            assertEquals(TipoEntrada.VALIDO, c.tipo());
+            assertNotNull(c.move());
+        }
+
+        @Test
+        @DisplayName("Rei nunca tem ambiguidade (só existe um)")
+        void reiSemAmbiguidade() {
+            Board board = new Board();
+            Classificacao c = XadrezLogica.classificarEntrada(board, "Ke2");
+            assertEquals(TipoEntrada.LANCE_ILEGAL, c.tipo());
+            assertNull(c.move());
+        }
+
+        @Test
+        @DisplayName("Peão nunca tem ambiguidade do tipo verificado")
+        void peaoSemAmbiguidade() {
+            Board board = new Board();
+            Classificacao c = XadrezLogica.classificarEntrada(board, "e4");
+            assertEquals(TipoEntrada.VALIDO, c.tipo());
+            assertNotNull(c.move());
+        }
+
+        @Test
+        @DisplayName("Roque nunca tem ambiguidade")
+        void roqueSemAmbiguidade() {
+            Board board = XadrezLogica.jogarSequencia("e4", "e5", "Nf3", "Nc6", "Bc4", "Bc5");
+            Classificacao c = XadrezLogica.classificarEntrada(board, "O-O");
+            assertEquals(TipoEntrada.VALIDO, c.tipo());
+            assertNotNull(c.move());
+        }
+    }
 }

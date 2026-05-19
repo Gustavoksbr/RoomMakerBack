@@ -68,7 +68,8 @@ public class SalaManager {
     @Transactional
     public Sala autenticarParticipante(String nomesala, String usernameDono, String senha,
             String usernameParticipante) {
-        this.usuarioManager.encontrarUsername(usernameDono); // unica funcao eh garantir que o dono existe
+        // Removida verificação de existência do dono: se a sala existe com esse
+        // usernameDono, o dono obviamente existe. Evita 1 query desnecessária ao banco.
         if (usernameParticipante.equals(usernameDono)) {
             throw new ErroDeRequisicaoGeral("Você já está na sala!");
         }
@@ -98,15 +99,13 @@ public class SalaManager {
         if (!usernameDono.equals(username)) {
             throw new UsuarioNaoAutorizado("Você não pode excluir sem ser o dono da sala!");
         }
-        Sala sala = this.salaRepository.mostrarSala(nomeSala, usernameDono);
+        Sala sala = this.salaRepository.excluirSalaERetornar(usernameDono, nomeSala);
 
         List<String> ouvintes = new ArrayList<>(sala.getUsernameParticipantes());
-        List listaNula = new ArrayList();
         ouvintes.add(usernameDono);
         this.webSocketSender.enviarMensagemParaSala(sala.getUsernameDono(), sala.getNome(), "sala", ouvintes,
-                listaNula);
+                new ArrayList<>());
 
-        this.salaRepository.excluirSala(usernameDono, nomeSala);
         this.categoriaService.excluirJogo(sala);
 
         // Notifica usuários online sobre sala deletada
@@ -158,7 +157,9 @@ public class SalaManager {
                             + totalAtual + "). Expulse alguns jogadores antes de reduzir a capacidade.");
         }
 
-        Sala salaAtualizada = this.salaRepository.alterarCapacidade(usernameDono, nomeSala, novaCapacidade);
+        // Reutiliza a sala já carregada para evitar segundo find no repositório
+        sala.setQtdCapacidade(novaCapacidade);
+        Sala salaAtualizada = this.salaRepository.salvarSala(sala);
 
         // Notifica usuários online sobre sala atualizada
         this.webSocketSender.notificarAtualizacaoDeSalasParaUsuariosOnline("ATUALIZADA",

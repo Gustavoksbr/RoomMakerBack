@@ -9,7 +9,6 @@ import com.example.roommaker.app.domain.exceptions.UsuarioNaoAutorizado;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -28,7 +27,6 @@ public class SalaRepositoryImpl implements SalaRepository {
 
     @Override
     public List<Sala> listar(String usernameDono, String nomeSala, String categoria) {
-
         return this.mongoSalaRepository
                 .findByUsernameDonoAndNomeAndCategoriaSubstring(usernameDono, nomeSala, categoria).stream()
                 .map(SalaEntity::toSala)
@@ -76,8 +74,7 @@ public class SalaRepositoryImpl implements SalaRepository {
         if (!salaEntity.getDisponivel()) {
             throw new ErroDeRequisicaoGeral("Sala fechada!");
         }
-        if (!(salaEntity.getSenha() == null || salaEntity.getSenha().isEmpty())) { // se tem senha. Se nao tiver, nao
-                                                                                   // precisa verificar e pode adicionar
+        if (!(salaEntity.getSenha() == null || salaEntity.getSenha().isEmpty())) {
             if (!salaEntity.getSenha().equals(senha)) {
                 throw new UsuarioNaoAutorizado("Senha incorreta!");
             }
@@ -99,6 +96,13 @@ public class SalaRepositoryImpl implements SalaRepository {
     }
 
     @Override
+    public Sala excluirSalaERetornar(String usernameDono, String nomeSala) {
+        SalaEntity salaEntity = this.entityFindByNomeAndUsernameDono(nomeSala, usernameDono);
+        this.mongoSalaRepository.delete(salaEntity);
+        return salaEntity.toSala();
+    }
+
+    @Override
     public void excluirSala(String usernameDono, String nomeSala) {
         SalaEntity salaEntity = this.entityFindByNomeAndUsernameDono(nomeSala, usernameDono);
         this.mongoSalaRepository.delete(salaEntity);
@@ -110,6 +114,13 @@ public class SalaRepositoryImpl implements SalaRepository {
         salaEntity.removeParticipante(usernameSaindo);
         this.mongoSalaRepository.save(salaEntity);
         return salaEntity.toSala();
+    }
+
+    @Override
+    public Sala salvarSala(Sala sala) {
+        SalaEntity entity = new SalaEntity(sala);
+        entity.setId(sala.getId());
+        return this.mongoSalaRepository.save(entity).toSala();
     }
 
     @Override

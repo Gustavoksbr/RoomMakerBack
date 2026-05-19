@@ -19,9 +19,15 @@ public interface SalaRepository {
 
     Sala verificarSeUsuarioEstaNaSalaERetornarSala(String nomeSala, String usernameDono, String usernameParticipante);
 
+    /** Exclui a sala e retorna seus dados (evita double-find no manager). */
+    Sala excluirSalaERetornar(String usernameDono, String nomeSala);
+
     void excluirSala(String usernameDono, String nomeSala);
 
     Sala sairDaSala(String usernameDono, String nomeSala, String usernameSaindo);
+
+    /** Salva uma sala já carregada em memória (evita double-find em alterações). */
+    Sala salvarSala(Sala sala);
 
     Sala alterarCapacidade(String usernameDono, String nomeSala, Long novaCapacidade);
 

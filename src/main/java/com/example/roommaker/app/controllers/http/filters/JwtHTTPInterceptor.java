@@ -27,10 +27,29 @@ public class JwtHTTPInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
+        // Endpoints públicos (modo sem login)
+        if (isPublicEndpoint(request)) {
+            return true;
+        }
+
         String authorization = Optional.ofNullable(request.getHeader("Authorization"))
                 .orElseThrow(() -> new ErroDeAutenticacaoGeral("Usuário não autenticado"));
         String username = jwtService.getUsername(authorization);
         request.setAttribute("username", username);
         return true;
+    }
+
+    private boolean isPublicEndpoint(HttpServletRequest request) {
+        String method = request.getMethod();
+        if (!"GET".equalsIgnoreCase(method)) return false;
+
+        String uri = request.getRequestURI();
+        if (uri == null) return false;
+
+        // Lista/filtra salas: GET /salas?...
+        if ("/salas".equals(uri) || "/salas/".equals(uri)) return true;
+
+        // Visualizar a página "fora da sala": GET /salas/{usernameDono}/{nomeSala}
+        return uri.matches("^/salas/[^/]+/[^/]+$");
     }
 }

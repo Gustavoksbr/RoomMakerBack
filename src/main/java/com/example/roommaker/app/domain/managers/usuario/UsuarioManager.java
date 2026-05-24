@@ -62,7 +62,7 @@ public class UsuarioManager {
         return lista;
     }
 
-    public String createUser(Usuario usuario) {
+    public JwtResponse createUser(Usuario usuario) {
         String senhaCriptografada = this.authService.encode(usuario.getPassword());
         Usuario usuarioParaSalvar = Usuario.builder()
                 .username(usuario.getUsername())
@@ -74,7 +74,8 @@ public class UsuarioManager {
                 .dataNascimento(usuario.getDataNascimento())
                 .build();
         this.userRepository.criar(usuarioParaSalvar);
-        return authService.generateToken(usuario.getUsername());
+        String token = authService.generateToken(usuario.getUsername());
+        return new JwtResponse(token, usuario.getUsername(), usuario.getEmail());
     }
 
     public Response authenticate(Usuario usuario) {
@@ -83,7 +84,8 @@ public class UsuarioManager {
             this.authService.sendVerificationCode(usuarioEncontrado.getEmail(), usuarioEncontrado.getUsername());
             return new UsuarioBasicAuth(usuarioEncontrado.getUsername());
         }
-        return new JwtResponse(authService.generateToken(usuarioEncontrado.getUsername()));
+        String token = authService.generateToken(usuarioEncontrado.getUsername());
+        return new JwtResponse(token, usuarioEncontrado.getUsername(), usuarioEncontrado.getEmail());
     }
 
     public String authenticate2fa(Usuario usuario, String codigo) {

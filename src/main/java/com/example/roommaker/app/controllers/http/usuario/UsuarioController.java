@@ -31,8 +31,7 @@ public class UsuarioController {
     @PostMapping("/cadastro")
     public ResponseEntity<JwtResponse> createUser(@RequestBody @Valid UsuarioParaCriarRequest usuario)
             throws InterruptedException {
-        JwtResponse jwtResponse = new JwtResponse(usuarioManager.createUser(usuario.toDomain()));
-        return ResponseEntity.ok(jwtResponse);
+        return ResponseEntity.ok(usuarioManager.createUser(usuario.toDomain()));
     }
 
     @PostMapping("/usuario/esquecisenha")

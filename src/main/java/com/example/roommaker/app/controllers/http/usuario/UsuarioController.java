@@ -67,13 +67,15 @@ public class UsuarioController {
         return ResponseEntity.ok(usuarioManager.habilitarDesabilitarDoisFatores(token));
     }
 
-    @GetMapping("/usuarios")
-    public ResponseEntity<List<UsuarioParaListarResponse>> listarUsuarios(
-            @RequestParam(defaultValue = "") String substring) {
-        List<UsuarioParaListarResponse> lista;
-        lista = usuarioManager.listarUsuarios(substring).stream().map(UsuarioParaListarResponse::new).toList();
-        return ResponseEntity.ok(lista);
-    }
+    // Endpoint comentado temporariamente pois o front-end não utiliza e atualmente expõe o e-mail dos usuários.
+    // No futuro, isso pode ser usado para uma página de ADM, onde cada usuário terá ROLEs específicas.
+    // @GetMapping("/usuarios")
+    // public ResponseEntity<List<UsuarioParaListarResponse>> listarUsuarios(
+    //         @RequestParam(defaultValue = "") String substring) {
+    //     List<UsuarioParaListarResponse> lista;
+    //     lista = usuarioManager.listarUsuarios(substring).stream().map(UsuarioParaListarResponse::new).toList();
+    //     return ResponseEntity.ok(lista);
+    // }
 
     @GetMapping("/datanascimento")
     public ResponseEntity<Map<String, String>> getDataNascimento(HttpServletRequest request) {

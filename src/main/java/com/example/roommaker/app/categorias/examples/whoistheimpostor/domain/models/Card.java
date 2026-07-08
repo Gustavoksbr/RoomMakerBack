@@ -121,5 +121,6 @@ public enum Card {
     MEGAKNIGHT,
     ELECTROGIANT,
     LAVA,
-    GOLEM
+    GOLEM,
+    RONIN
 }

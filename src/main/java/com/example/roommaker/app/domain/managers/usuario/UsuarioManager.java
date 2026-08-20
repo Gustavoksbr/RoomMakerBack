@@ -7,7 +7,6 @@ import com.example.roommaker.app.domain.models.Usuario;
 import com.example.roommaker.app.domain.models.UsuarioBasicAuth;
 import com.example.roommaker.app.domain.ports.auth.AuthService;
 import com.example.roommaker.app.domain.ports.repository.UsuarioRepository;
-import com.example.roommaker.app.domain.exceptions.ErroDeAutenticacaoGeral;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -101,12 +100,20 @@ public class UsuarioManager {
         return usuario.getDoisFatores();
     }
 
+    /**
+     * Decodifica o username do JWT — sem tocar no banco.
+     *
+     * É chamado a cada frame STOMP SEND/SUBSCRIBE ({@link
+     * com.example.roommaker.app.controllers.websocket.filters.JwtWebsocketInterceptor}),
+     * ou seja: uma vez por LANCE. Um "existePorUsername" aqui era uma ida ao
+     * Mongo em todo lance de xadrez só para confirmar algo que a assinatura
+     * HMAC do token já garante — a mesma verificação já tinha sido removida do
+     * lado HTTP (ver {@link
+     * com.example.roommaker.app.controllers.http.filters.JwtHTTPInterceptor})
+     * pelo mesmo motivo; só faltava espelhar aqui.
+     */
     public String capturarUsernameDoToken(String token) {
-        String username = authService.getUsername(token);
-        if (!this.userRepository.existePorUsername(username)) {
-            throw new ErroDeAutenticacaoGeral("Usuario decodificado pelo token nao encontrado");
-        }
-        return username;
+        return authService.getUsername(token);
     }
 
     public Usuario encontrarUsername(String username) {

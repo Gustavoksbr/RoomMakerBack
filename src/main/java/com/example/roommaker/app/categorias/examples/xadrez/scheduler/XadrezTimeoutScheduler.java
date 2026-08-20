@@ -56,14 +56,11 @@ public class XadrezTimeoutScheduler {
      */
     @Scheduled(fixedRate = 1000)
     public void verificarTimeouts() {
-        // Busca apenas salas com partidas ativas
-        // TODO: Otimizar com índice ou cache se necessário
-        List<SalaXadrez> salasAtivas = repository.findAll().stream()
-                .filter(SalaXadrez::partidaEmAndamento)
-                .filter(s -> s.getPartidaAtual() != null)
-                .filter(s -> s.getPartidaAtual().getControleTempo() != null)
-                .filter(s -> !s.getPartidaAtual().getControleTempo().tempoInfinito())
-                .toList();
+        // O filtro roda no Mongo, não em memória: busca só as salas com partida
+        // em andamento E relógio configurado — não a coleção inteira a cada
+        // segundo, pra sempre. É a mesma lista que o filtro em memória de antes
+        // produzia, só que sem baixar tudo pra descartar a maior parte aqui.
+        List<SalaXadrez> salasAtivas = repository.buscarPartidasAtivasComTempo();
 
         if (salasAtivas.isEmpty()) {
             return; // Nenhuma partida ativa com tempo, não faz nada

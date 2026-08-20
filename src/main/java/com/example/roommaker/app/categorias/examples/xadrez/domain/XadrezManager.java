@@ -16,7 +16,6 @@ import com.github.bhlangonijr.chesslib.move.Move;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -117,7 +116,17 @@ public class XadrezManager implements JogoPort {
     // Configurar e iniciar em um único passo
     // -------------------------------------------------------------------------
 
-    @Transactional
+    /**
+     * SEM @Transactional de propósito: este método (como jogar, jogarCoordenadas
+     * e definirPreLances) sempre escreve em exatamente UM documento
+     * (repository.save(salaXadrez) roda uma única vez, em cada caminho do
+     * método) — e o Mongo já garante atomicidade de documento único sozinho,
+     * sem precisar de uma sessão transacional. A anotação não protegia nada
+     * aqui; só pagava o custo de negociar uma transação (round-trips extras de
+     * start/commit) em toda partida iniciada, todo lance, toda fila de
+     * pré-lance — e contenção de sessão foi a causa observada de WriteConflict
+     * entre este código e o scheduler de timeout rodando em paralelo.
+     */
     public void configurarEIniciar(String nomeSala, String usernameDono, String username,
             String usernameBrancas, String usernamePretas, NotacaoXadrez notacao,
             Integer tempoInicialBrancas, Integer incrementoBrancas,
@@ -173,7 +182,8 @@ public class XadrezManager implements JogoPort {
     // Lance por notação (modo às cegas)
     // -------------------------------------------------------------------------
 
-    @Transactional(noRollbackFor = ErroDeRequisicaoGeral.class)
+    // Ver o comentário em configurarEIniciar: um save() por caminho, um documento
+    // só — @Transactional não protegia nada extra e só custava round-trips.
     public void jogar(String nomeSala, String usernameDono, String username, String san) {
         ContextoLance ctx = prepararLance(nomeSala, usernameDono, username);
         SalaXadrez salaXadrez = ctx.salaXadrez();
@@ -225,7 +235,7 @@ public class XadrezManager implements JogoPort {
      * jogo. Quem está olhando o tabuleiro só consegue mandar um lance ilegal se o
      * cliente estiver com estado velho — punir isso seria punir a rede.
      */
-    @Transactional(noRollbackFor = ErroDeRequisicaoGeral.class)
+    // Ver o comentário em configurarEIniciar.
     public void jogarCoordenadas(String nomeSala, String usernameDono, String username,
             String from, String to, String promocao) {
         PreLance lance = PreLance.normalizar(from, to, promocao);
@@ -238,8 +248,14 @@ public class XadrezManager implements JogoPort {
                 lance.getFrom(), lance.getTo(), lance.getPromocao());
 
         if (move == null) {
+            // O marcador "(tabuleiro visual)" é o que deixa o frontend calar essa
+            // mensagem específica sem calar a irmã dela do modo às cegas (que usa
+            // o mesmo texto-base "Lance ilegal na posição atual", mas ali é um erro
+            // de verdade do jogador — aqui só acontece por desync de rede, e o
+            // cliente já reverte a peça sozinho, sem precisar de aviso.
             throw new ErroDeRequisicaoGeral(
-                    "Lance ilegal na posição atual: " + lance.getFrom() + "-" + lance.getTo() + ".");
+                    "Lance ilegal na posição atual (tabuleiro visual): "
+                            + lance.getFrom() + "-" + lance.getTo() + ".");
         }
 
         aplicarLanceERepercutir(ctx, move);
@@ -263,7 +279,7 @@ public class XadrezManager implements JogoPort {
      * fato estava com o relógio correndo: é isso que impede usar este endpoint
      * como um "lance de graça".
      */
-    @Transactional(noRollbackFor = ErroDeRequisicaoGeral.class)
+    // Ver o comentário em configurarEIniciar.
     public void definirPreLances(String nomeSala, String usernameDono, String username, List<PreLance> fila) {
         Sala sala = salaManager.verificarSeUsuarioEstaNaSalaERetornarSala(nomeSala, usernameDono, username);
         SalaXadrez salaXadrez = obterSala(nomeSala, usernameDono);

@@ -31,6 +31,12 @@ public class SalaXadrez {
     @Builder.Default
     private NotacaoXadrez notacao = NotacaoXadrez.INGLESA;
 
+    /**
+     * Modo visual: true = tabuleiro com peças, false = às cegas (apenas notação).
+     */
+    @Builder.Default
+    private Boolean modoVisual = false;
+
     /** Partida em andamento. Null se não há partida ativa. */
     private PartidaXadrez partidaAtual;
 

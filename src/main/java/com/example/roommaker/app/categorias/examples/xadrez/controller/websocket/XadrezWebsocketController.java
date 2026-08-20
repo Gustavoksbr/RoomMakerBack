@@ -2,12 +2,16 @@ package com.example.roommaker.app.categorias.examples.xadrez.controller.websocke
 
 import com.example.roommaker.app.categorias.examples.xadrez.controller.request.*;
 import com.example.roommaker.app.categorias.examples.xadrez.domain.XadrezManager;
+import com.example.roommaker.app.categorias.examples.xadrez.domain.model.PreLance;
 import com.example.roommaker.app.domain.thread.Contexto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Controller;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 // Todos os endpoints seguem o padrão: /sala/{usernameDono}/{nomeSala}/{username}/xadrez/...
 @Controller
@@ -28,7 +32,8 @@ public class XadrezWebsocketController {
             @Payload XadrezConfigurarRequest request) {
         Contexto.setUsername(username);
         xadrezManager.configurar(nomeSala, usernameDono, username,
-                request.getUsernameBrancas(), request.getUsernamePretas(), request.getNotacao());
+                request.getUsernameBrancas(), request.getUsernamePretas(), request.getNotacao(),
+                request.getModoVisual());
     }
 
     @MessageMapping("/sala/{usernameDono}/{nomeSala}/{username}/xadrez/iniciar")
@@ -50,7 +55,7 @@ public class XadrezWebsocketController {
         xadrezManager.configurarEIniciar(nomeSala, usernameDono, username,
                 request.getUsernameBrancas(), request.getUsernamePretas(), request.getNotacao(),
                 request.calcularTempoTotalBrancas(), request.getIncrementoBrancasSegundos(),
-                request.calcularTempoTotalPretas(), request.getIncrementoPretasSegundos());
+                request.calcularTempoTotalPretas(), request.getIncrementoPretasSegundos(), request.getModoVisual());
     }
 
     @MessageMapping("/sala/{usernameDono}/{nomeSala}/{username}/xadrez/lance")
@@ -60,7 +65,45 @@ public class XadrezWebsocketController {
             @DestinationVariable String username,
             @Payload XadrezLanceRequest request) {
         Contexto.setUsername(username);
-        xadrezManager.jogar(nomeSala, usernameDono, username, request.getSan());
+        if (request.temCoordenadas()) {
+            xadrezManager.jogarCoordenadas(nomeSala, usernameDono, username,
+                    request.getFrom(), request.getTo(), request.getPromocao());
+        } else {
+            xadrezManager.jogar(nomeSala, usernameDono, username, request.getSan());
+        }
+    }
+
+    /**
+     * Substitui a fila de pré-lances do jogador. Ver
+     * {@link com.example.roommaker.app.categorias.examples.xadrez.domain.XadrezManager#definirPreLances}.
+     */
+    @MessageMapping("/sala/{usernameDono}/{nomeSala}/{username}/xadrez/pre-lances")
+    public void preLances(
+            @DestinationVariable String usernameDono,
+            @DestinationVariable String nomeSala,
+            @DestinationVariable String username,
+            @Payload XadrezPreLancesRequest request) {
+        Contexto.setUsername(username);
+        xadrezManager.definirPreLances(nomeSala, usernameDono, username, converter(request));
+    }
+
+    @MessageMapping("/sala/{usernameDono}/{nomeSala}/{username}/xadrez/cancelar-pre-lances")
+    public void cancelarPreLances(
+            @DestinationVariable String usernameDono,
+            @DestinationVariable String nomeSala,
+            @DestinationVariable String username) {
+        Contexto.setUsername(username);
+        xadrezManager.limparPreLances(nomeSala, usernameDono, username);
+    }
+
+    private List<PreLance> converter(XadrezPreLancesRequest request) {
+        if (request == null || request.getFila() == null)
+            return List.of();
+        // Sem normalizar aqui de propósito: quem valida coordenada é o manager,
+        // que é quem também recusa a requisição inteira se alguma vier torta.
+        return request.getFila().stream()
+                .map(dto -> dto == null ? null : new PreLance(dto.getFrom(), dto.getTo(), dto.getPromocao()))
+                .collect(Collectors.toList());
     }
 
     @MessageMapping("/sala/{usernameDono}/{nomeSala}/{username}/xadrez/desistir")

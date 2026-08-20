@@ -3,6 +3,7 @@ package com.example.roommaker.app.categorias.examples.xadrez.domain;
 import com.example.roommaker.app.categorias.examples.JogoPort;
 import com.example.roommaker.app.categorias.examples.xadrez.domain.XadrezLogica.*;
 import com.example.roommaker.app.categorias.examples.xadrez.domain.model.*;
+import com.example.roommaker.app.categorias.examples.xadrez.domain.service.XadrezPreLanceService;
 import com.example.roommaker.app.categorias.examples.xadrez.domain.service.XadrezTempoService;
 import com.example.roommaker.app.categorias.examples.xadrez.repository.SalaXadrezRepository;
 import com.example.roommaker.app.categorias.examples.xadrez.sender.XadrezSender;
@@ -19,7 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -29,13 +29,18 @@ public class XadrezManager implements JogoPort {
     private final XadrezSender sender;
     private final SalaManager salaManager;
     private final XadrezTempoService tempoService;
+    private final XadrezPreLanceService preLanceService;
+    private final XadrezResponseFactory responseFactory;
 
     public XadrezManager(SalaXadrezRepository repository, XadrezSender sender,
-            @Lazy SalaManager salaManager, XadrezTempoService tempoService) {
+            @Lazy SalaManager salaManager, XadrezTempoService tempoService,
+            XadrezPreLanceService preLanceService, XadrezResponseFactory responseFactory) {
         this.repository = repository;
         this.sender = sender;
         this.salaManager = salaManager;
         this.tempoService = tempoService;
+        this.preLanceService = preLanceService;
+        this.responseFactory = responseFactory;
     }
 
     // -------------------------------------------------------------------------
@@ -52,11 +57,11 @@ public class XadrezManager implements JogoPort {
     }
 
     // -------------------------------------------------------------------------
-    // Configuração (dono define brancas/pretas e notação)
+    // Configuração (dono define brancas/pretas, notação e modo)
     // -------------------------------------------------------------------------
 
     public void configurar(String nomeSala, String usernameDono, String username,
-            String usernameBrancas, String usernamePretas, NotacaoXadrez notacao) {
+            String usernameBrancas, String usernamePretas, NotacaoXadrez notacao, Boolean modoVisual) {
         Sala sala = salaManager.mostrarSala(nomeSala, usernameDono);
         validarDono(sala, username);
 
@@ -65,22 +70,14 @@ public class XadrezManager implements JogoPort {
             throw new ErroDeRequisicaoGeral("Não é possível alterar configurações com partida em andamento.");
         }
 
-        // Valida que brancas e pretas são jogadores da sala
-        List<String> jogadores = jogadoresDaSala(sala);
-        if (!jogadores.contains(usernameBrancas)) {
-            throw new ErroDeRequisicaoGeral("'" + usernameBrancas + "' não está na sala.");
-        }
-        if (!jogadores.contains(usernamePretas)) {
-            throw new ErroDeRequisicaoGeral("'" + usernamePretas + "' não está na sala.");
-        }
-        if (usernameBrancas.equals(usernamePretas)) {
-            throw new ErroDeRequisicaoGeral("Brancas e pretas devem ser jogadores diferentes.");
-        }
+        validarJogadores(sala, usernameBrancas, usernamePretas);
 
         salaXadrez.setUsernameBrancas(usernameBrancas);
         salaXadrez.setUsernamePretas(usernamePretas);
         if (notacao != null)
             salaXadrez.setNotacao(notacao);
+        if (modoVisual != null)
+            salaXadrez.setModoVisual(modoVisual);
         repository.save(salaXadrez);
 
         enviarParaTodos(sala, salaXadrez, "CONFIGURACAO_ALTERADA");
@@ -107,6 +104,7 @@ public class XadrezManager implements JogoPort {
                 .usernameBrancas(salaXadrez.getUsernameBrancas())
                 .usernamePretas(salaXadrez.getUsernamePretas())
                 .notacao(salaXadrez.getNotacao())
+                .modoVisual(salaXadrez.getModoVisual())
                 .build();
         salaXadrez.setProximoIdPartida(salaXadrez.getProximoIdPartida() + 1);
         salaXadrez.setPartidaAtual(partida);
@@ -123,7 +121,7 @@ public class XadrezManager implements JogoPort {
     public void configurarEIniciar(String nomeSala, String usernameDono, String username,
             String usernameBrancas, String usernamePretas, NotacaoXadrez notacao,
             Integer tempoInicialBrancas, Integer incrementoBrancas,
-            Integer tempoInicialPretas, Integer incrementoPretas) {
+            Integer tempoInicialPretas, Integer incrementoPretas, Boolean modoVisual) {
         Sala sala = salaManager.mostrarSala(nomeSala, usernameDono);
         validarDono(sala, username);
 
@@ -132,21 +130,14 @@ public class XadrezManager implements JogoPort {
             throw new ErroDeRequisicaoGeral("Já há uma partida em andamento.");
         }
 
-        List<String> jogadores = jogadoresDaSala(sala);
-        if (!jogadores.contains(usernameBrancas)) {
-            throw new ErroDeRequisicaoGeral("'" + usernameBrancas + "' não está na sala.");
-        }
-        if (!jogadores.contains(usernamePretas)) {
-            throw new ErroDeRequisicaoGeral("'" + usernamePretas + "' não está na sala.");
-        }
-        if (usernameBrancas.equals(usernamePretas)) {
-            throw new ErroDeRequisicaoGeral("Brancas e pretas devem ser jogadores diferentes.");
-        }
+        validarJogadores(sala, usernameBrancas, usernamePretas);
 
         salaXadrez.setUsernameBrancas(usernameBrancas);
         salaXadrez.setUsernamePretas(usernamePretas);
         if (notacao != null)
             salaXadrez.setNotacao(notacao);
+        if (modoVisual != null)
+            salaXadrez.setModoVisual(modoVisual);
 
         // Cria controle de tempo usando o serviço (converte segundos para
         // milissegundos)
@@ -164,45 +155,28 @@ public class XadrezManager implements JogoPort {
                 .usernamePretas(usernamePretas)
                 .notacao(notacao != null ? notacao : salaXadrez.getNotacao())
                 .controleTempo(controleTempo)
+                .modoVisual(salaXadrez.getModoVisual())
                 .build();
         salaXadrez.setProximoIdPartida(salaXadrez.getProximoIdPartida() + 1);
         salaXadrez.setPartidaAtual(partida);
         repository.save(salaXadrez);
 
-        log.info("Partida iniciada na sala {}/{} - Brancas: {}, Pretas: {}, Tempo: {}",
+        log.info("Partida iniciada na sala {}/{} - Brancas: {}, Pretas: {}, Modo: {}, Tempo: {}",
                 usernameDono, nomeSala, usernameBrancas, usernamePretas,
+                Boolean.TRUE.equals(salaXadrez.getModoVisual()) ? "visual" : "às cegas",
                 controleTempo != null ? "configurado" : "infinito");
 
         enviarParaTodos(sala, salaXadrez, "PARTIDA_INICIADA");
     }
 
     // -------------------------------------------------------------------------
-    // Lance
+    // Lance por notação (modo às cegas)
     // -------------------------------------------------------------------------
 
     @Transactional(noRollbackFor = ErroDeRequisicaoGeral.class)
     public void jogar(String nomeSala, String usernameDono, String username, String san) {
-        Sala sala = salaManager.verificarSeUsuarioEstaNaSalaERetornarSala(nomeSala, usernameDono, username);
-        SalaXadrez salaXadrez = obterSala(nomeSala, usernameDono);
-        PartidaXadrez partida = exigirPartidaEmAndamento(salaXadrez);
-
-        // Valida que é a vez do jogador
-        boolean vezBrancas = partida.vezDasBrancas();
-        String jogadorDaVez = vezBrancas ? salaXadrez.getUsernameBrancas() : salaXadrez.getUsernamePretas();
-        if (!username.equals(jogadorDaVez)) {
-            throw new ErroDeRequisicaoGeral("Não é a sua vez de jogar.");
-        }
-
-        // EVENTO: Verifica timeout ANTES de processar o lance
-        XadrezTempoService.ResultadoTimeout timeout = tempoService.verificarTimeout(partida, salaXadrez);
-        if (timeout != null) {
-            partida.encerrar(timeout.resultado(), timeout.motivo());
-            tempoService.congelarTempo(partida);
-            salaXadrez.arquivarPartida(partida);
-            repository.save(salaXadrez);
-            enviarParaTodos(sala, salaXadrez, "FIM");
-            throw new ErroDeRequisicaoGeral("Tempo esgotado!");
-        }
+        ContextoLance ctx = prepararLance(nomeSala, usernameDono, username);
+        SalaXadrez salaXadrez = ctx.salaXadrez();
 
         // Valida que o lance está na notação correta
         if (!NotacaoValidator.validarNotacao(san, salaXadrez.getNotacao())) {
@@ -216,9 +190,7 @@ public class XadrezManager implements JogoPort {
 
         // Converte da notação configurada para inglês (SAN padrão)
         String sanIngles = NotacaoConverter.paraIngles(san, salaXadrez.getNotacao());
-
-        Board board = XadrezLogica.reconstruirBoard(partida.getLances(), salaXadrez.getNotacao());
-        Classificacao classif = XadrezLogica.classificarEntrada(board, sanIngles);
+        Classificacao classif = XadrezLogica.classificarEntrada(ctx.board(), sanIngles);
 
         switch (classif.tipo()) {
             case NOTACAO_INVALIDA -> {
@@ -229,47 +201,116 @@ public class XadrezManager implements JogoPort {
             }
             case LANCE_AMBIGUO -> {
                 // Lance ambíguo é tratado como ilegal e penaliza
-                partida.incrementarIlegais(vezBrancas);
-                repository.save(salaXadrez);
-                enviarParaTodos(sala, salaXadrez, "LANCE_ILEGAL");
+                penalizarLanceIlegal(ctx);
                 throw new ErroDeRequisicaoGeral(
                         "Lance ambíguo: '" + san + "'. Especifique qual peça mover.");
             }
             case LANCE_ILEGAL -> {
-                partida.incrementarIlegais(vezBrancas);
-                repository.save(salaXadrez);
-                enviarParaTodos(sala, salaXadrez, "LANCE_ILEGAL");
+                penalizarLanceIlegal(ctx);
                 throw new ErroDeRequisicaoGeral("Lance ilegal na posição atual: '" + san + "'.");
             }
-            case VALIDO -> {
-                Move move = classif.move();
-                String sanCanonica = XadrezLogica.sanCanonica(board, move, partida.getLances(),
-                        salaXadrez.getNotacao());
-                board.doMove(move);
-
-                // Converte a SAN canônica (inglês) para a notação configurada antes de
-                // armazenar
-                String sanArmazenada = NotacaoConverter.deIngles(sanCanonica, salaXadrez.getNotacao());
-                partida.getLances().add(sanArmazenada);
-                partida.setPropostaEmpate(null); // jogar cancela proposta de empate
-
-                // EVENTO: Processa tempo após o lance (adiciona incremento e atualiza
-                // timestamp)
-                tempoService.processarAposLance(partida, vezBrancas);
-
-                ResultadoFim fim = XadrezLogica.verificarFim(board);
-                if (fim != null) {
-                    partida.encerrar(fim.resultado(), fim.motivo());
-                    tempoService.congelarTempo(partida);
-                    salaXadrez.arquivarPartida(partida);
-                    repository.save(salaXadrez);
-                    enviarParaTodos(sala, salaXadrez, "FIM");
-                } else {
-                    repository.save(salaXadrez);
-                    enviarParaTodos(sala, salaXadrez, "LANCE");
-                }
-            }
+            case VALIDO -> aplicarLanceERepercutir(ctx, classif.move());
         }
+    }
+
+    // -------------------------------------------------------------------------
+    // Lance por coordenadas (modo visual)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Joga a partir de duas casas do tabuleiro, e não de uma SAN.
+     *
+     * Note que aqui NÃO existe "lance ilegal contabilizado": o contador de ilegais
+     * é uma régua do modo às cegas, onde errar a posição de cabeça é parte do
+     * jogo. Quem está olhando o tabuleiro só consegue mandar um lance ilegal se o
+     * cliente estiver com estado velho — punir isso seria punir a rede.
+     */
+    @Transactional(noRollbackFor = ErroDeRequisicaoGeral.class)
+    public void jogarCoordenadas(String nomeSala, String usernameDono, String username,
+            String from, String to, String promocao) {
+        PreLance lance = PreLance.normalizar(from, to, promocao);
+        if (lance == null) {
+            throw new ErroDeRequisicaoGeral("Coordenadas inválidas: '" + from + "' -> '" + to + "'.");
+        }
+
+        ContextoLance ctx = prepararLance(nomeSala, usernameDono, username);
+        Move move = XadrezLogica.resolverPorCoordenadas(ctx.board(),
+                lance.getFrom(), lance.getTo(), lance.getPromocao());
+
+        if (move == null) {
+            throw new ErroDeRequisicaoGeral(
+                    "Lance ilegal na posição atual: " + lance.getFrom() + "-" + lance.getTo() + ".");
+        }
+
+        aplicarLanceERepercutir(ctx, move);
+    }
+
+    // -------------------------------------------------------------------------
+    // Pré-lances
+    // -------------------------------------------------------------------------
+
+    /**
+     * Substitui a fila de pré-lances do jogador pela fila inteira que o cliente
+     * mandou.
+     *
+     * Substituir (em vez de acrescentar) é o que torna a operação idempotente: um
+     * pacote repetido ou fora de ordem não duplica nem embaralha a fila, e o
+     * cliente nunca precisa reconciliar diferenças com o servidor.
+     *
+     * Se, quando a fila chega, JÁ for a vez do jogador, a fila é aplicada na hora
+     * — é a corrida normal entre "o adversário jogou" e "meu pré-lance saiu". Nesse
+     * caso o primeiro lance é cobrado no relógio normalmente, porque o jogador de
+     * fato estava com o relógio correndo: é isso que impede usar este endpoint
+     * como um "lance de graça".
+     */
+    @Transactional(noRollbackFor = ErroDeRequisicaoGeral.class)
+    public void definirPreLances(String nomeSala, String usernameDono, String username, List<PreLance> fila) {
+        Sala sala = salaManager.verificarSeUsuarioEstaNaSalaERetornarSala(nomeSala, usernameDono, username);
+        SalaXadrez salaXadrez = obterSala(nomeSala, usernameDono);
+        PartidaXadrez partida = exigirPartidaEmAndamento(salaXadrez);
+
+        Boolean souBrancas = ladoDe(salaXadrez, username);
+        if (souBrancas == null) {
+            throw new ErroDeRequisicaoGeral("Você não está jogando esta partida.");
+        }
+
+        List<PreLance> normalizados = normalizarFila(fila);
+        partida.definirPreLances(souBrancas, normalizados);
+
+        // Chegou tarde: já é a vez de quem mandou. Aplica agora, cobrando o tempo
+        // do primeiro lance — ele estava no relógio.
+        if (partida.vezDasBrancas() == souBrancas && !normalizados.isEmpty()) {
+            XadrezTempoService.ResultadoTimeout timeout = tempoService.verificarTimeout(partida, salaXadrez);
+            if (timeout != null) {
+                encerrarEArquivar(sala, salaXadrez, partida, timeout.resultado(), timeout.motivo());
+                throw new ErroDeRequisicaoGeral("Tempo esgotado!");
+            }
+
+            Board board = XadrezLogica.reconstruirBoard(partida.getLances(), salaXadrez.getNotacao());
+            String cancelado = usernameDoLado(salaXadrez,
+                    preLanceService.aplicarCadeia(partida, board, salaXadrez.getNotacao(), true)
+                            .ladoCanceladoBrancas());
+
+            if (!partida.emAndamento()) {
+                salaXadrez.arquivarPartida(partida);
+                repository.save(salaXadrez);
+                enviarParaTodos(sala, salaXadrez, "FIM", cancelado);
+            } else {
+                repository.save(salaXadrez);
+                enviarParaTodos(sala, salaXadrez, "LANCE", cancelado);
+            }
+            return;
+        }
+
+        repository.save(salaXadrez);
+        // Só quem enfileirou precisa saber. Avisar a sala inteira entregaria de
+        // graça a informação de que o adversário está pré-lançando.
+        enviarParaUsuario(usernameDono, nomeSala, username, salaXadrez, "PRE_LANCES_ATUALIZADOS");
+    }
+
+    /** Descarta a fila do jogador. Atalho para {@link #definirPreLances} com fila vazia. */
+    public void limparPreLances(String nomeSala, String usernameDono, String username) {
+        definirPreLances(nomeSala, usernameDono, username, List.of());
     }
 
     // -------------------------------------------------------------------------
@@ -283,11 +324,7 @@ public class XadrezManager implements JogoPort {
 
         boolean ehBrancas = username.equals(salaXadrez.getUsernameBrancas());
         ResultadoXadrez resultado = ehBrancas ? ResultadoXadrez.VITORIA_PRETAS : ResultadoXadrez.VITORIA_BRANCAS;
-        partida.encerrar(resultado, MotivoXadrez.DESISTENCIA);
-        salaXadrez.arquivarPartida(partida);
-        repository.save(salaXadrez);
-
-        enviarParaTodos(sala, salaXadrez, "FIM");
+        encerrarEArquivar(sala, salaXadrez, partida, resultado, MotivoXadrez.DESISTENCIA);
     }
 
     // -------------------------------------------------------------------------
@@ -328,10 +365,7 @@ public class XadrezManager implements JogoPort {
         }
 
         if (aceitar) {
-            partida.encerrar(ResultadoXadrez.EMPATE, MotivoXadrez.ACORDO_MUTUO);
-            salaXadrez.arquivarPartida(partida);
-            repository.save(salaXadrez);
-            enviarParaTodos(sala, salaXadrez, "FIM");
+            encerrarEArquivar(sala, salaXadrez, partida, ResultadoXadrez.EMPATE, MotivoXadrez.ACORDO_MUTUO);
         } else {
             partida.setPropostaEmpate(null);
             repository.save(salaXadrez);
@@ -346,7 +380,7 @@ public class XadrezManager implements JogoPort {
     public XadrezResponse mostrar(String nomeSala, String usernameDono, String username) {
         salaManager.verificarSeUsuarioEstaNaSalaERetornarSala(nomeSala, usernameDono, username);
         SalaXadrez salaXadrez = obterSala(nomeSala, usernameDono);
-        return construirResponse(salaXadrez, username, null);
+        return responseFactory.construir(salaXadrez, username, null);
     }
 
     // -------------------------------------------------------------------------
@@ -377,7 +411,7 @@ public class XadrezManager implements JogoPort {
             List<String> ouvintes = jogadoresDaSala(sala);
             ouvintes.add(usernameParticipante);
             sender.enviarParaTodos(sala.getUsernameDono(), sala.getNome(), ouvintes,
-                    construirResponseParaTodos(salaXadrez, "FIM"));
+                    responseFactory.construir(salaXadrez, null, "FIM"));
         }
         // Limpa configuração de brancas/pretas se o jogador que saiu estava configurado
         if (usernameParticipante.equals(salaXadrez.getUsernameBrancas())) {
@@ -396,8 +430,106 @@ public class XadrezManager implements JogoPort {
             return;
         List<String> ouvintes = jogadoresDaSala(sala);
         sender.enviarParaTodos(sala.getUsernameDono(), sala.getNome(), ouvintes,
-                construirResponseParaTodos(salaXadrez, "SALA_DELETADA"));
+                responseFactory.construir(salaXadrez, null, "SALA_DELETADA"));
         repository.deleteByNomeSalaAndUsernameDono(sala.getNome(), sala.getUsernameDono());
+    }
+
+    // -------------------------------------------------------------------------
+    // Fluxo compartilhado entre lance por SAN e lance por coordenadas
+    // -------------------------------------------------------------------------
+
+    /** Estado já validado e pronto para receber um lance. */
+    private record ContextoLance(Sala sala, SalaXadrez salaXadrez, PartidaXadrez partida,
+            Board board, boolean vezBrancas) {
+    }
+
+    /**
+     * Valida vez, tempo e monta o tabuleiro da posição atual.
+     * Lança {@link ErroDeRequisicaoGeral} — e pode encerrar a partida por tempo.
+     */
+    private ContextoLance prepararLance(String nomeSala, String usernameDono, String username) {
+        Sala sala = salaManager.verificarSeUsuarioEstaNaSalaERetornarSala(nomeSala, usernameDono, username);
+        SalaXadrez salaXadrez = obterSala(nomeSala, usernameDono);
+        PartidaXadrez partida = exigirPartidaEmAndamento(salaXadrez);
+
+        boolean vezBrancas = partida.vezDasBrancas();
+        String jogadorDaVez = vezBrancas ? salaXadrez.getUsernameBrancas() : salaXadrez.getUsernamePretas();
+        if (!username.equals(jogadorDaVez)) {
+            throw new ErroDeRequisicaoGeral("Não é a sua vez de jogar.");
+        }
+
+        // EVENTO: Verifica timeout ANTES de processar o lance
+        XadrezTempoService.ResultadoTimeout timeout = tempoService.verificarTimeout(partida, salaXadrez);
+        if (timeout != null) {
+            encerrarEArquivar(sala, salaXadrez, partida, timeout.resultado(), timeout.motivo());
+            throw new ErroDeRequisicaoGeral("Tempo esgotado!");
+        }
+
+        Board board = XadrezLogica.reconstruirBoard(partida.getLances(), salaXadrez.getNotacao());
+        return new ContextoLance(sala, salaXadrez, partida, board, vezBrancas);
+    }
+
+    /**
+     * Aplica o lance do jogador e, em seguida, tudo o que ele destrava: o fim da
+     * partida, ou a cadeia de pré-lances que agora ficou jogável.
+     */
+    private void aplicarLanceERepercutir(ContextoLance ctx, Move move) {
+        PartidaXadrez partida = ctx.partida();
+        SalaXadrez salaXadrez = ctx.salaXadrez();
+
+        registrarLance(partida, ctx.board(), move, salaXadrez.getNotacao());
+
+        // Guarda, não mecanismo: a cadeia sempre para no lado cuja fila esvaziou
+        // (ou acabou de ser descartada por ilegal), então quem consegue jogar na
+        // mão já está com a fila vazia. A linha existe para que uma mudança
+        // futura na cadeia não faça um pré-lance velho disparar depois deste
+        // lance, que mudou a posição para a qual ele tinha sido pensado.
+        partida.limparPreLances(ctx.vezBrancas());
+        tempoService.processarAposLance(partida, ctx.vezBrancas());
+
+        ResultadoFim fim = XadrezLogica.verificarFim(ctx.board());
+        if (fim != null) {
+            encerrarEArquivar(ctx.sala(), salaXadrez, partida, fim.resultado(), fim.motivo());
+            return;
+        }
+
+        String filaCancelada = usernameDoLado(salaXadrez,
+                preLanceService.aplicarCadeia(partida, ctx.board(), salaXadrez.getNotacao(), false)
+                        .ladoCanceladoBrancas());
+
+        if (!partida.emAndamento()) {
+            // A cadeia de pré-lances terminou a partida (mate, afogamento, ...).
+            salaXadrez.arquivarPartida(partida);
+            repository.save(salaXadrez);
+            enviarParaTodos(ctx.sala(), salaXadrez, "FIM", filaCancelada);
+            return;
+        }
+
+        repository.save(salaXadrez);
+        enviarParaTodos(ctx.sala(), salaXadrez, "LANCE", filaCancelada);
+    }
+
+    /** Anota o lance em SAN na notação da sala e o executa no tabuleiro. */
+    private void registrarLance(PartidaXadrez partida, Board board, Move move, NotacaoXadrez notacao) {
+        String sanCanonica = XadrezLogica.sanCanonica(board, move, partida.getLances(), notacao);
+        board.doMove(move);
+        partida.getLances().add(NotacaoConverter.deIngles(sanCanonica, notacao));
+        partida.setPropostaEmpate(null); // jogar cancela proposta de empate
+    }
+
+    private void penalizarLanceIlegal(ContextoLance ctx) {
+        ctx.partida().incrementarIlegais(ctx.vezBrancas());
+        repository.save(ctx.salaXadrez());
+        enviarParaTodos(ctx.sala(), ctx.salaXadrez(), "LANCE_ILEGAL");
+    }
+
+    private void encerrarEArquivar(Sala sala, SalaXadrez salaXadrez, PartidaXadrez partida,
+            ResultadoXadrez resultado, MotivoXadrez motivo) {
+        partida.encerrar(resultado, motivo);
+        tempoService.congelarTempo(partida);
+        salaXadrez.arquivarPartida(partida);
+        repository.save(salaXadrez);
+        enviarParaTodos(sala, salaXadrez, "FIM");
     }
 
     // -------------------------------------------------------------------------
@@ -424,6 +556,58 @@ public class XadrezManager implements JogoPort {
         }
     }
 
+    private void validarJogadores(Sala sala, String usernameBrancas, String usernamePretas) {
+        List<String> jogadores = jogadoresDaSala(sala);
+        if (!jogadores.contains(usernameBrancas)) {
+            throw new ErroDeRequisicaoGeral("'" + usernameBrancas + "' não está na sala.");
+        }
+        if (!jogadores.contains(usernamePretas)) {
+            throw new ErroDeRequisicaoGeral("'" + usernamePretas + "' não está na sala.");
+        }
+        if (usernameBrancas.equals(usernamePretas)) {
+            throw new ErroDeRequisicaoGeral("Brancas e pretas devem ser jogadores diferentes.");
+        }
+    }
+
+    /** Traduz "o lado que teve a fila descartada" no username correspondente. */
+    private String usernameDoLado(SalaXadrez salaXadrez, Boolean ladoBrancas) {
+        if (ladoBrancas == null)
+            return null;
+        return ladoBrancas ? salaXadrez.getUsernameBrancas() : salaXadrez.getUsernamePretas();
+    }
+
+    /** true = joga de brancas, false = de pretas, null = não é jogador da partida. */
+    private Boolean ladoDe(SalaXadrez salaXadrez, String username) {
+        if (username == null)
+            return null;
+        if (username.equals(salaXadrez.getUsernameBrancas()))
+            return Boolean.TRUE;
+        if (username.equals(salaXadrez.getUsernamePretas()))
+            return Boolean.FALSE;
+        return null;
+    }
+
+    private List<PreLance> normalizarFila(List<PreLance> fila) {
+        if (fila == null || fila.isEmpty())
+            return List.of();
+
+        if (fila.size() > PartidaXadrez.MAX_PRE_LANCES) {
+            throw new ErroDeRequisicaoGeral(
+                    "Máximo de " + PartidaXadrez.MAX_PRE_LANCES + " pré-lances enfileirados.");
+        }
+
+        List<PreLance> normalizados = new ArrayList<>(fila.size());
+        for (PreLance bruto : fila) {
+            PreLance ok = bruto == null ? null
+                    : PreLance.normalizar(bruto.getFrom(), bruto.getTo(), bruto.getPromocao());
+            if (ok == null) {
+                throw new ErroDeRequisicaoGeral("Pré-lance com coordenadas inválidas.");
+            }
+            normalizados.add(ok);
+        }
+        return normalizados;
+    }
+
     private List<String> jogadoresDaSala(Sala sala) {
         List<String> lista = new ArrayList<>(sala.getUsernameParticipantes());
         lista.add(sala.getUsernameDono());
@@ -431,92 +615,26 @@ public class XadrezManager implements JogoPort {
     }
 
     private void enviarParaTodos(Sala sala, SalaXadrez salaXadrez, String evento) {
-        List<String> ouvintes = jogadoresDaSala(sala);
-        // Envia resposta personalizada (com histórico) para cada jogador
-        for (String ouvinte : ouvintes) {
-            XadrezResponse r = construirResponse(salaXadrez, ouvinte, evento);
+        enviarParaTodos(sala, salaXadrez, evento, null);
+    }
+
+    /**
+     * @param usernameFilaCancelada quem deve receber o aviso de que a própria fila
+     *                              de pré-lances foi descartada. Só ele recebe.
+     */
+    private void enviarParaTodos(Sala sala, SalaXadrez salaXadrez, String evento, String usernameFilaCancelada) {
+        // Cada jogador recebe uma resposta própria: o histórico e a fila de
+        // pré-lances são dados privados de cada um.
+        for (String ouvinte : jogadoresDaSala(sala)) {
+            XadrezResponse r = responseFactory.construir(salaXadrez, ouvinte, evento,
+                    ouvinte.equals(usernameFilaCancelada));
             sender.enviarParaUsuario(salaXadrez.getUsernameDono(), salaXadrez.getNomeSala(), ouvinte, r);
         }
     }
 
     private void enviarParaUsuario(String usernameDono, String nomeSala, String username,
             SalaXadrez salaXadrez, String evento) {
-        XadrezResponse r = construirResponse(salaXadrez, username, evento);
+        XadrezResponse r = responseFactory.construir(salaXadrez, username, evento);
         sender.enviarParaUsuario(usernameDono, nomeSala, username, r);
-    }
-
-    private XadrezResponse construirResponseParaTodos(SalaXadrez salaXadrez, String evento) {
-        return construirResponse(salaXadrez, null, evento);
-    }
-
-    private XadrezResponse construirResponse(SalaXadrez salaXadrez, String username, String evento) {
-        PartidaXadrez partida = salaXadrez.getPartidaAtual();
-
-        XadrezResponse.XadrezResponseBuilder builder = XadrezResponse.builder()
-                .usernameBrancas(salaXadrez.getUsernameBrancas())
-                .usernamePretas(salaXadrez.getUsernamePretas())
-                .notacao(salaXadrez.getNotacao())
-                .evento(evento)
-                .partidaEmAndamento(salaXadrez.partidaEmAndamento());
-
-        if (partida != null) {
-            builder.partidaId(partida.getId())
-                    .lances(new ArrayList<>(partida.getLances()))
-                    .resultado(partida.getResultado() != null ? partida.getResultado().name() : null)
-                    .motivo(partida.getMotivo() != null ? partida.getMotivo().name() : null)
-                    .propostaEmpate(partida.getPropostaEmpate())
-                    .lancesIlegaisBrancas(partida.getLancesIlegaisBrancas())
-                    .lancesIlegaisPretas(partida.getLancesIlegaisPretas())
-                    .vezDasBrancas(partida.vezDasBrancas());
-
-            // Adiciona informações de tempo se existir controle de tempo
-            if (partida.getControleTempo() != null) {
-                ControleTempoXadrez ct = partida.getControleTempo();
-                builder.tempoInicialBrancas(ct.getTempoInicialBrancasSegundos())
-                        .tempoInicialPretas(ct.getTempoInicialPretasSegundos())
-                        .incrementoBrancas(ct.getIncrementoBrancasSegundos())
-                        .incrementoPretas(ct.getIncrementoPretasSegundos())
-                        .tempoRestanteBrancas(ct.getTempoRestanteBrancasSegundos())
-                        .tempoRestantePretas(ct.getTempoRestantePretasSegundos())
-                        .timestampUltimoLance(ct.getTimestampUltimoLance());
-            }
-        }
-
-        // Histórico personalizado por username (ordem decrescente — última partida
-        // primeiro)
-        if (username != null && salaXadrez.getHistoricoPorUsername().containsKey(username)) {
-            List<XadrezResponse.PartidaXadrezResumo> historico = salaXadrez.getHistoricoPorUsername()
-                    .get(username).stream()
-                    .map(p -> {
-                        XadrezResponse.PartidaXadrezResumo.PartidaXadrezResumoBuilder resumoBuilder = XadrezResponse.PartidaXadrezResumo
-                                .builder()
-                                .id(p.getId())
-                                .pgn(p.pgn())
-                                .lances(new ArrayList<>(p.getLances()))
-                                .resultado(p.getResultado() != null ? p.getResultado().name() : null)
-                                .motivo(p.getMotivo() != null ? p.getMotivo().name() : null)
-                                .lancesIlegaisBrancas(p.getLancesIlegaisBrancas())
-                                .lancesIlegaisPretas(p.getLancesIlegaisPretas())
-                                .usernameBrancas(p.getUsernameBrancas())
-                                .usernamePretas(p.getUsernamePretas())
-                                .notacao(p.getNotacao());
-
-                        // Adiciona informações de tempo no histórico
-                        if (p.getControleTempo() != null) {
-                            ControleTempoXadrez ct = p.getControleTempo();
-                            resumoBuilder.tempoInicialBrancas(ct.getTempoInicialBrancasSegundos())
-                                    .tempoInicialPretas(ct.getTempoInicialPretasSegundos())
-                                    .incrementoBrancas(ct.getIncrementoBrancasSegundos())
-                                    .incrementoPretas(ct.getIncrementoPretasSegundos());
-                        }
-
-                        return resumoBuilder.build();
-                    })
-                    .sorted((a, b) -> Long.compare(b.getId(), a.getId()))
-                    .collect(Collectors.toList());
-            builder.historico(historico);
-        }
-
-        return builder.build();
     }
 }

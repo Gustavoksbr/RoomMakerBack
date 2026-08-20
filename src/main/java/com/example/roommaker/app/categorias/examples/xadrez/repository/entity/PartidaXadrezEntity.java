@@ -3,11 +3,13 @@ package com.example.roommaker.app.categorias.examples.xadrez.repository.entity;
 import com.example.roommaker.app.categorias.examples.xadrez.domain.model.ControleTempoXadrez;
 import com.example.roommaker.app.categorias.examples.xadrez.domain.model.MotivoXadrez;
 import com.example.roommaker.app.categorias.examples.xadrez.domain.model.PartidaXadrez;
+import com.example.roommaker.app.categorias.examples.xadrez.domain.model.PreLance;
 import com.example.roommaker.app.categorias.examples.xadrez.domain.model.ResultadoXadrez;
 import lombok.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Getter
 @Setter
@@ -28,6 +30,19 @@ public class PartidaXadrezEntity {
         private String usernameBrancas;
         private String usernamePretas;
         private String notacao; // PORTUGUESA ou INGLESA
+        private Boolean modoVisual; // true = tabuleiro visual, false = às cegas
+
+        /**
+         * Filas de pré-lances em formato UCI ("e2e4", "e7e8q").
+         *
+         * Ficam persistidas junto da partida para sobreviverem a um reload da
+         * página ou a uma queda de conexão: a fila é uma promessa que o jogador já
+         * fez, não um estado de tela.
+         */
+        @Builder.Default
+        private List<String> preLancesBrancas = new ArrayList<>();
+        @Builder.Default
+        private List<String> preLancesPretas = new ArrayList<>();
 
         // Campos de controle de tempo (em milissegundos)
         private Long tempoInicialBrancas;
@@ -49,7 +64,10 @@ public class PartidaXadrezEntity {
                                 .lancesIlegaisPretas(p.getLancesIlegaisPretas())
                                 .usernameBrancas(p.getUsernameBrancas())
                                 .usernamePretas(p.getUsernamePretas())
-                                .notacao(p.getNotacao() != null ? p.getNotacao().name() : null);
+                                .notacao(p.getNotacao() != null ? p.getNotacao().name() : null)
+                                .modoVisual(p.getModoVisual())
+                                .preLancesBrancas(paraUci(p.getPreLancesBrancas()))
+                                .preLancesPretas(paraUci(p.getPreLancesPretas()));
 
                 // Adiciona controle de tempo se existir
                 if (p.getControleTempo() != null) {
@@ -82,7 +100,10 @@ public class PartidaXadrezEntity {
                                 .notacao(this.notacao != null
                                                 ? com.example.roommaker.app.categorias.examples.xadrez.domain.model.NotacaoXadrez
                                                                 .valueOf(this.notacao)
-                                                : null);
+                                                : null)
+                                .modoVisual(this.modoVisual)
+                                .preLancesBrancas(deUci(this.preLancesBrancas))
+                                .preLancesPretas(deUci(this.preLancesPretas));
 
                 // Reconstrói controle de tempo se existir
                 if (this.tempoInicialBrancas != null || this.tempoInicialPretas != null) {
@@ -99,5 +120,23 @@ public class PartidaXadrezEntity {
                 }
 
                 return builder.build();
+        }
+
+        // -- conversão das filas de pré-lances --
+
+        private static List<String> paraUci(List<PreLance> fila) {
+                if (fila == null)
+                        return new ArrayList<>();
+                return fila.stream().map(PreLance::toUci).collect(Collectors.toList());
+        }
+
+        /** Entradas corrompidas são descartadas: uma fila é descartável por natureza. */
+        private static List<PreLance> deUci(List<String> fila) {
+                if (fila == null)
+                        return new ArrayList<>();
+                return fila.stream()
+                                .map(PreLance::deUci)
+                                .filter(java.util.Objects::nonNull)
+                                .collect(Collectors.toList());
         }
 }

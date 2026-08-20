@@ -1,5 +1,6 @@
 package com.example.roommaker.app.categorias.examples.xadrez.scheduler;
 
+import com.example.roommaker.app.categorias.examples.xadrez.domain.XadrezResponseFactory;
 import com.example.roommaker.app.categorias.examples.xadrez.domain.model.*;
 import com.example.roommaker.app.categorias.examples.xadrez.domain.service.XadrezTempoService;
 import com.example.roommaker.app.categorias.examples.xadrez.repository.SalaXadrezRepository;
@@ -36,13 +37,15 @@ public class XadrezTimeoutScheduler {
     private final XadrezTempoService tempoService;
     private final XadrezSender sender;
     private final SalaManager salaManager;
+    private final XadrezResponseFactory responseFactory;
 
     public XadrezTimeoutScheduler(SalaXadrezRepository repository, XadrezTempoService tempoService,
-            XadrezSender sender, SalaManager salaManager) {
+            XadrezSender sender, SalaManager salaManager, XadrezResponseFactory responseFactory) {
         this.repository = repository;
         this.tempoService = tempoService;
         this.sender = sender;
         this.salaManager = salaManager;
+        this.responseFactory = responseFactory;
     }
 
     /**
@@ -119,7 +122,7 @@ public class XadrezTimeoutScheduler {
     private void enviarParaTodos(Sala sala, SalaXadrez salaXadrez, String evento) {
         List<String> ouvintes = jogadoresDaSala(sala);
         for (String ouvinte : ouvintes) {
-            XadrezResponse r = construirResponse(salaXadrez, ouvinte, evento);
+            XadrezResponse r = responseFactory.construir(salaXadrez, ouvinte, evento);
             sender.enviarParaUsuario(salaXadrez.getUsernameDono(), salaXadrez.getNomeSala(), ouvinte, r);
         }
     }
@@ -130,70 +133,4 @@ public class XadrezTimeoutScheduler {
         return lista;
     }
 
-    private XadrezResponse construirResponse(SalaXadrez salaXadrez, String username, String evento) {
-        PartidaXadrez partida = salaXadrez.getPartidaAtual();
-
-        XadrezResponse.XadrezResponseBuilder builder = XadrezResponse.builder()
-                .usernameBrancas(salaXadrez.getUsernameBrancas())
-                .usernamePretas(salaXadrez.getUsernamePretas())
-                .notacao(salaXadrez.getNotacao())
-                .evento(evento)
-                .partidaEmAndamento(salaXadrez.partidaEmAndamento());
-
-        if (partida != null) {
-            builder.partidaId(partida.getId())
-                    .lances(new ArrayList<>(partida.getLances()))
-                    .resultado(partida.getResultado() != null ? partida.getResultado().name() : null)
-                    .motivo(partida.getMotivo() != null ? partida.getMotivo().name() : null)
-                    .propostaEmpate(partida.getPropostaEmpate())
-                    .lancesIlegaisBrancas(partida.getLancesIlegaisBrancas())
-                    .lancesIlegaisPretas(partida.getLancesIlegaisPretas())
-                    .vezDasBrancas(partida.vezDasBrancas());
-
-            if (partida.getControleTempo() != null) {
-                ControleTempoXadrez ct = partida.getControleTempo();
-                builder.tempoInicialBrancas(ct.getTempoInicialBrancasSegundos())
-                        .tempoInicialPretas(ct.getTempoInicialPretasSegundos())
-                        .incrementoBrancas(ct.getIncrementoBrancasSegundos())
-                        .incrementoPretas(ct.getIncrementoPretasSegundos())
-                        .tempoRestanteBrancas(ct.getTempoRestanteBrancasSegundos())
-                        .tempoRestantePretas(ct.getTempoRestantePretasSegundos())
-                        .timestampUltimoLance(ct.getTimestampUltimoLance());
-            }
-        }
-
-        if (username != null && salaXadrez.getHistoricoPorUsername().containsKey(username)) {
-            List<XadrezResponse.PartidaXadrezResumo> historico = salaXadrez.getHistoricoPorUsername()
-                    .get(username).stream()
-                    .map(p -> {
-                        XadrezResponse.PartidaXadrezResumo.PartidaXadrezResumoBuilder resumoBuilder = XadrezResponse.PartidaXadrezResumo
-                                .builder()
-                                .id(p.getId())
-                                .pgn(p.pgn())
-                                .lances(new ArrayList<>(p.getLances()))
-                                .resultado(p.getResultado() != null ? p.getResultado().name() : null)
-                                .motivo(p.getMotivo() != null ? p.getMotivo().name() : null)
-                                .lancesIlegaisBrancas(p.getLancesIlegaisBrancas())
-                                .lancesIlegaisPretas(p.getLancesIlegaisPretas())
-                                .usernameBrancas(p.getUsernameBrancas())
-                                .usernamePretas(p.getUsernamePretas())
-                                .notacao(p.getNotacao());
-
-                        if (p.getControleTempo() != null) {
-                            ControleTempoXadrez ct = p.getControleTempo();
-                            resumoBuilder.tempoInicialBrancas(ct.getTempoInicialBrancasSegundos())
-                                    .tempoInicialPretas(ct.getTempoInicialPretasSegundos())
-                                    .incrementoBrancas(ct.getIncrementoBrancasSegundos())
-                                    .incrementoPretas(ct.getIncrementoPretasSegundos());
-                        }
-
-                        return resumoBuilder.build();
-                    })
-                    .sorted((a, b) -> Long.compare(b.getId(), a.getId()))
-                    .toList();
-            builder.historico(historico);
-        }
-
-        return builder.build();
-    }
 }

@@ -83,7 +83,7 @@ class XadrezTempoIntegrationTest {
     void configurarComTempo() {
         // 5 minutos = 300 segundos, incremento 3s
         xadrezManager.configurarEIniciar(SALA, DONO, DONO, BRANCAS, PRETAS, NotacaoXadrez.INGLESA,
-                300, 3, 300, 3);
+                300, 3, 300, 3, null);
 
         SalaXadrez salaXadrez = repository.findByNomeSalaAndUsernameDono(SALA, DONO);
         assertNotNull(salaXadrez);
@@ -111,7 +111,7 @@ class XadrezTempoIntegrationTest {
     @DisplayName("Configurar partida com tempo infinito")
     void configurarComTempoInfinito() {
         xadrezManager.configurarEIniciar(SALA, DONO, DONO, BRANCAS, PRETAS, NotacaoXadrez.INGLESA,
-                null, null, null, null);
+                null, null, null, null, null);
 
         SalaXadrez salaXadrez = repository.findByNomeSalaAndUsernameDono(SALA, DONO);
         PartidaXadrez partida = salaXadrez.getPartidaAtual();
@@ -126,7 +126,7 @@ class XadrezTempoIntegrationTest {
     void configurarComTemposDiferentes() {
         // Brancas: 10min + 5s, Pretas: 5min + 3s
         xadrezManager.configurarEIniciar(SALA, DONO, DONO, BRANCAS, PRETAS, NotacaoXadrez.INGLESA,
-                600, 5, 300, 3);
+                600, 5, 300, 3, null);
 
         SalaXadrez salaXadrez = repository.findByNomeSalaAndUsernameDono(SALA, DONO);
         PartidaXadrez partida = salaXadrez.getPartidaAtual();
@@ -143,7 +143,7 @@ class XadrezTempoIntegrationTest {
     void lanceAdicionaIncremento() throws InterruptedException {
         // 10 segundos + 2s incremento
         xadrezManager.configurarEIniciar(SALA, DONO, DONO, BRANCAS, PRETAS, NotacaoXadrez.INGLESA,
-                10, 2, 10, 2);
+                10, 2, 10, 2, null);
 
         // Aguarda 1 segundo para simular tempo de pensamento
         Thread.sleep(1000);
@@ -168,7 +168,7 @@ class XadrezTempoIntegrationTest {
     void tempoEsgotado_VitoriaOponente() throws InterruptedException {
         // Brancas com 1 segundo (vai esgotar rapidamente)
         xadrezManager.configurarEIniciar(SALA, DONO, DONO, BRANCAS, PRETAS, NotacaoXadrez.INGLESA,
-                1, 0, 300, 0);
+                1, 0, 300, 0, null);
 
         // Aguarda 2 segundos para o scheduler detectar o timeout
         Thread.sleep(2000);
@@ -192,7 +192,7 @@ class XadrezTempoIntegrationTest {
     void tempoEsgotado_MaterialInsuficiente_Empate() {
         // Configura partida com tempo muito curto
         xadrezManager.configurarEIniciar(SALA, DONO, DONO, BRANCAS, PRETAS, NotacaoXadrez.INGLESA,
-                1, 0, 300, 0);
+                1, 0, 300, 0, null);
 
         // Simula posição onde pretas têm apenas rei (material insuficiente)
         // Isso seria testado em uma posição específica, mas por simplicidade
@@ -207,7 +207,7 @@ class XadrezTempoIntegrationTest {
     @DisplayName("Persistência do controle de tempo")
     void persistenciaControleTempo() {
         xadrezManager.configurarEIniciar(SALA, DONO, DONO, BRANCAS, PRETAS, NotacaoXadrez.INGLESA,
-                600, 5, 300, 3);
+                600, 5, 300, 3, null);
 
         // Faz alguns lances
         xadrezManager.jogar(SALA, DONO, BRANCAS, "e4");
@@ -230,7 +230,7 @@ class XadrezTempoIntegrationTest {
     @DisplayName("Histórico mantém informações de tempo")
     void historicoMantemTempo() {
         xadrezManager.configurarEIniciar(SALA, DONO, DONO, BRANCAS, PRETAS, NotacaoXadrez.INGLESA,
-                180, 2, 180, 2);
+                180, 2, 180, 2, null);
 
         // Joga até xeque-mate rápido (Scholar's mate)
         xadrezManager.jogar(SALA, DONO, BRANCAS, "e4");

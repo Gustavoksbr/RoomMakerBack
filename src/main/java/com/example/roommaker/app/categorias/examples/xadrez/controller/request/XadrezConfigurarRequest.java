@@ -8,6 +8,7 @@ public class XadrezConfigurarRequest {
     private String usernameBrancas;
     private String usernamePretas;
     private NotacaoXadrez notacao; // opcional
+    private Boolean modoVisual; // opcional - true = tabuleiro visual, false = às cegas
 
     // Configurações de tempo (null = tempo infinito)
     private Integer tempoInicialBrancasMinutos;

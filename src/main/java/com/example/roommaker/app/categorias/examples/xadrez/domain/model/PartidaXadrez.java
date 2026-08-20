@@ -22,6 +22,11 @@ public class PartidaXadrez {
     /** Notação usada na partida (PORTUGUESA ou INGLESA) */
     private NotacaoXadrez notacao;
 
+    /**
+     * Modo visual: true = tabuleiro com peças, false = às cegas (apenas notação)
+     */
+    private Boolean modoVisual;
+
     /** Controle de tempo da partida (null = sem controle de tempo) */
     private ControleTempoXadrez controleTempo;
 
@@ -41,6 +46,22 @@ public class PartidaXadrez {
 
     @Builder.Default
     private int lancesIlegaisPretas = 0;
+
+    /**
+     * Fila de pré-lances das brancas, na ordem em que serão tentados.
+     * Vive no servidor (e não só no navegador) para que o relógio não cobre o
+     * ida-e-volta da rede e para que ninguém possa forjar "esse lance foi
+     * pré-lance" só para ganhar tempo.
+     */
+    @Builder.Default
+    private List<PreLance> preLancesBrancas = new ArrayList<>();
+
+    /** Fila de pré-lances das pretas. Ver {@link #preLancesBrancas}. */
+    @Builder.Default
+    private List<PreLance> preLancesPretas = new ArrayList<>();
+
+    /** Quantos pré-lances um jogador pode deixar enfileirados. */
+    public static final int MAX_PRE_LANCES = 8;
 
     public boolean emAndamento() {
         return ResultadoXadrez.EM_ANDAMENTO.equals(resultado);
@@ -65,6 +86,48 @@ public class PartidaXadrez {
         this.resultado = res;
         this.motivo = mot;
         this.propostaEmpate = null;
+        limparTodosPreLances();
+    }
+
+    // -------------------------------------------------------------------------
+    // Pré-lances
+    // -------------------------------------------------------------------------
+
+    /** A fila do lado pedido — a lista real, não uma cópia. */
+    public List<PreLance> preLancesDe(boolean brancas) {
+        if (brancas) {
+            if (preLancesBrancas == null)
+                preLancesBrancas = new ArrayList<>();
+            return preLancesBrancas;
+        }
+        if (preLancesPretas == null)
+            preLancesPretas = new ArrayList<>();
+        return preLancesPretas;
+    }
+
+    /** Substitui a fila de um lado inteira. O cliente sempre manda a fila toda. */
+    public void definirPreLances(boolean brancas, List<PreLance> fila) {
+        List<PreLance> nova = fila == null ? new ArrayList<>() : new ArrayList<>(fila);
+        if (nova.size() > MAX_PRE_LANCES) {
+            nova = new ArrayList<>(nova.subList(0, MAX_PRE_LANCES));
+        }
+        if (brancas)
+            this.preLancesBrancas = nova;
+        else
+            this.preLancesPretas = nova;
+    }
+
+    public void limparPreLances(boolean brancas) {
+        preLancesDe(brancas).clear();
+    }
+
+    public void limparTodosPreLances() {
+        limparPreLances(true);
+        limparPreLances(false);
+    }
+
+    public boolean temPreLances(boolean brancas) {
+        return !preLancesDe(brancas).isEmpty();
     }
 
     /** Formata os lances em PGN: "1. e4 e5 2. Nf3 Nc6" */

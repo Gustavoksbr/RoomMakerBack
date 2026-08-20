@@ -139,6 +139,41 @@ public class ControleTempoXadrez {
     }
 
     /**
+     * Atualiza o tempo restante após um PRÉ-LANCE.
+     *
+     * A diferença para {@link #atualizarAposLance(boolean)} é que aqui NÃO se
+     * desconta tempo decorrido: o jogador já tinha decidido esse lance antes de
+     * ser a vez dele, então o intervalo entre o lance do adversário e a aplicação
+     * do pré-lance é tempo do adversário e da rede, não dele. É por isso que a
+     * fila mora no servidor — só assim dá para afirmar que o lance já estava
+     * decidido, em vez de acreditar num "foi pré-lance, juro" vindo do cliente.
+     *
+     * O incremento continua valendo, como no chess.com.
+     *
+     * @param vezBrancas true se quem pré-lançou foi das brancas
+     */
+    public void atualizarAposPreLance(boolean vezBrancas) {
+        if (tempoInfinito()) {
+            return;
+        }
+
+        Long restante = vezBrancas ? tempoRestanteBrancas : tempoRestantePretas;
+
+        // Só um dos lados pode ter relógio finito; para o lado infinito basta
+        // reabrir a janela de contagem do adversário.
+        if (restante != null) {
+            long incremento = vezBrancas ? incrementoBrancas : incrementoPretas;
+            if (vezBrancas) {
+                this.tempoRestanteBrancas = restante + incremento;
+            } else {
+                this.tempoRestantePretas = restante + incremento;
+            }
+        }
+
+        this.timestampUltimoLance = System.currentTimeMillis();
+    }
+
+    /**
      * Congela o tempo no estado atual.
      * Útil quando a partida termina para preservar o tempo final.
      */

@@ -51,6 +51,83 @@ public class XadrezLogica {
         return null;
     }
 
+    /**
+     * Resolve um lance dado em COORDENADAS (origem, destino e peça de promoção).
+     *
+     * É o caminho usado pelo tabuleiro visual e pelos pré-lances: clicar/arrastar
+     * produz duas casas, não uma SAN. Resolver aqui evita que o cliente precise
+     * replicar a desambiguação e a tradução de notação do servidor.
+     *
+     * O roque é expresso como o rei andando duas casas (e1→g1), que é como a
+     * chesslib gera o lance.
+     *
+     * @param promocao "q", "r", "b" ou "n" (minúsculo), ou null.
+     * @return o lance legal correspondente, ou null se não houver nenhum.
+     */
+    public static Move resolverPorCoordenadas(Board board, String from, String to, String promocao) {
+        if (board == null || from == null || to == null)
+            return null;
+
+        com.github.bhlangonijr.chesslib.Square origem;
+        com.github.bhlangonijr.chesslib.Square destino;
+        try {
+            origem = com.github.bhlangonijr.chesslib.Square.valueOf(from.trim().toUpperCase());
+            destino = com.github.bhlangonijr.chesslib.Square.valueOf(to.trim().toUpperCase());
+        } catch (Exception e) {
+            return null;
+        }
+        if (origem == destino)
+            return null;
+
+        com.github.bhlangonijr.chesslib.Piece pecaPromovida = pecaDePromocao(board, promocao);
+        // Uma promoção pedida explicitamente só casa com um lance de promoção; sem
+        // promoção, `Piece.NONE` só casa com lances normais. O equals de Move compara
+        // exatamente esses três campos, então a busca abaixo já distingue os dois casos.
+        Move procurado = new Move(origem, destino, pecaPromovida);
+
+        List<Move> legais = MoveGenerator.generateLegalMoves(board);
+        for (Move legal : legais) {
+            if (legal.equals(procurado))
+                return legal;
+        }
+
+        // Nada casou e a promoção não foi informada: o lance pode ser uma promoção
+        // que o cliente não soube que era (típico de pré-lance enfileirado antes de
+        // o peão chegar à última fileira). Assume dama, como o chess.com — perder a
+        // fila inteira por causa de uma letra faltando seria pior.
+        if (pecaPromovida == com.github.bhlangonijr.chesslib.Piece.NONE) {
+            Move comDama = new Move(origem, destino,
+                    com.github.bhlangonijr.chesslib.Piece.make(board.getSideToMove(),
+                            com.github.bhlangonijr.chesslib.PieceType.QUEEN));
+            for (Move legal : legais) {
+                if (legal.equals(comDama))
+                    return legal;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Converte a letra da promoção na peça da cor que está para jogar.
+     * Retorna {@code Piece.NONE} quando não há promoção.
+     */
+    private static com.github.bhlangonijr.chesslib.Piece pecaDePromocao(Board board, String promocao) {
+        if (promocao == null || promocao.isBlank())
+            return com.github.bhlangonijr.chesslib.Piece.NONE;
+
+        com.github.bhlangonijr.chesslib.PieceType tipo = switch (promocao.trim().toLowerCase()) {
+            case "q" -> com.github.bhlangonijr.chesslib.PieceType.QUEEN;
+            case "r" -> com.github.bhlangonijr.chesslib.PieceType.ROOK;
+            case "b" -> com.github.bhlangonijr.chesslib.PieceType.BISHOP;
+            case "n" -> com.github.bhlangonijr.chesslib.PieceType.KNIGHT;
+            default -> null;
+        };
+        if (tipo == null)
+            return com.github.bhlangonijr.chesslib.Piece.NONE;
+
+        return com.github.bhlangonijr.chesslib.Piece.make(board.getSideToMove(), tipo);
+    }
+
     public static Move parseSan(Board board, String san) {
         try {
             MoveList lista = new MoveList(board.getFen());

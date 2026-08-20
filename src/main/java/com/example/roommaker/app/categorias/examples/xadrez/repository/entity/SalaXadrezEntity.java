@@ -44,6 +44,9 @@ public class SalaXadrezEntity {
     @Field("notacao")
     private String notacao;
 
+    @Field("modo_visual")
+    private Boolean modoVisual;
+
     @Field("partida_atual")
     private PartidaXadrezEntity partidaAtual;
 
@@ -66,6 +69,7 @@ public class SalaXadrezEntity {
                 .usernameBrancas(s.getUsernameBrancas())
                 .usernamePretas(s.getUsernamePretas())
                 .notacao(s.getNotacao() != null ? s.getNotacao().name() : NotacaoXadrez.INGLESA.name())
+                .modoVisual(s.getModoVisual() != null ? s.getModoVisual() : Boolean.FALSE)
                 .partidaAtual(s.getPartidaAtual() != null ? PartidaXadrezEntity.fromDomain(s.getPartidaAtual()) : null)
                 .proximoIdPartida(s.getProximoIdPartida())
                 .historicoPorUsername(historico)
@@ -85,6 +89,9 @@ public class SalaXadrezEntity {
                 .usernameBrancas(this.usernameBrancas)
                 .usernamePretas(this.usernamePretas)
                 .notacao(this.notacao != null ? NotacaoXadrez.valueOf(this.notacao) : NotacaoXadrez.INGLESA)
+                // Salas criadas antes do modo visual existir não têm o campo: às cegas
+                // continua sendo o padrão delas.
+                .modoVisual(this.modoVisual != null ? this.modoVisual : Boolean.FALSE)
                 .partidaAtual(this.partidaAtual != null ? this.partidaAtual.toDomain() : null)
                 .proximoIdPartida(this.proximoIdPartida != null ? this.proximoIdPartida : 1L)
                 .historicoPorUsername(historico)

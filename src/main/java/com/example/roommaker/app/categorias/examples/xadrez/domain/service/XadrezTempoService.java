@@ -116,6 +116,29 @@ public class XadrezTempoService {
     }
 
     /**
+     * Processa o tempo após um PRÉ-LANCE aplicado pelo servidor.
+     *
+     * Ao contrário de {@link #processarAposLance}, não cobra o tempo decorrido de
+     * quem pré-lançou — ver {@link ControleTempoXadrez#atualizarAposPreLance}.
+     *
+     * @param partida    partida atual
+     * @param vezBrancas true se quem pré-lançou foi das brancas
+     */
+    public void processarAposPreLance(PartidaXadrez partida, boolean vezBrancas) {
+        ControleTempoXadrez ct = partida.getControleTempo();
+
+        if (ct == null || ct.tempoInfinito()) {
+            return;
+        }
+
+        ct.atualizarAposPreLance(vezBrancas);
+
+        log.debug("Tempo atualizado após pré-lance. Brancas: {}s, Pretas: {}s",
+                ct.getTempoRestanteBrancasSegundos(),
+                ct.getTempoRestantePretasSegundos());
+    }
+
+    /**
      * Congela o tempo quando a partida termina.
      * 
      * @param partida partida que terminou

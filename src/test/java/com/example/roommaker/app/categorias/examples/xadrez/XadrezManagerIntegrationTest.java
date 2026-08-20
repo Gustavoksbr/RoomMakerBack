@@ -93,7 +93,7 @@ class XadrezManagerIntegrationTest {
     @Order(1)
     @DisplayName("configurar: define brancas, pretas e notação")
     void configurar() {
-        xadrezManager.configurar(SALA, DONO, DONO, DONO, PARTICIPANTE, NotacaoXadrez.PORTUGUESA);
+        xadrezManager.configurar(SALA, DONO, DONO, DONO, PARTICIPANTE, NotacaoXadrez.PORTUGUESA, null);
 
         SalaXadrez s = repository.findByNomeSalaAndUsernameDono(SALA, DONO);
         assertNotNull(s);
@@ -107,14 +107,14 @@ class XadrezManagerIntegrationTest {
     @DisplayName("configurar: rejeita jogador que não está na sala")
     void configurarJogadorForaDaSala() {
         assertThrows(ErroDeRequisicaoGeral.class,
-                () -> xadrezManager.configurar(SALA, DONO, DONO, DONO, "forasteiro", null));
+                () -> xadrezManager.configurar(SALA, DONO, DONO, DONO, "forasteiro", null, null));
     }
 
     @Test
     @Order(3)
     @DisplayName("configurar: rejeita brancas == pretas")
     void configurarMesmoJogador() {
-        assertThrows(ErroDeRequisicaoGeral.class, () -> xadrezManager.configurar(SALA, DONO, DONO, DONO, DONO, null));
+        assertThrows(ErroDeRequisicaoGeral.class, () -> xadrezManager.configurar(SALA, DONO, DONO, DONO, DONO, null, null));
     }
 
     // =========================================================================
@@ -125,7 +125,7 @@ class XadrezManagerIntegrationTest {
     @Order(10)
     @DisplayName("iniciarPartida: cria partida com ID 1")
     void iniciarPartida() {
-        xadrezManager.configurar(SALA, DONO, DONO, DONO, PARTICIPANTE, null);
+        xadrezManager.configurar(SALA, DONO, DONO, DONO, PARTICIPANTE, null, null);
         xadrezManager.iniciarPartida(SALA, DONO, DONO);
 
         SalaXadrez s = repository.findByNomeSalaAndUsernameDono(SALA, DONO);
@@ -146,7 +146,7 @@ class XadrezManagerIntegrationTest {
     @Order(12)
     @DisplayName("iniciarPartida: rejeita com partida já em andamento")
     void iniciarComPartidaEmAndamento() {
-        xadrezManager.configurar(SALA, DONO, DONO, DONO, PARTICIPANTE, null);
+        xadrezManager.configurar(SALA, DONO, DONO, DONO, PARTICIPANTE, null, null);
         xadrezManager.iniciarPartida(SALA, DONO, DONO);
 
         assertThrows(ErroDeRequisicaoGeral.class, () -> xadrezManager.iniciarPartida(SALA, DONO, DONO));
@@ -157,7 +157,7 @@ class XadrezManagerIntegrationTest {
     // =========================================================================
 
     private void configurarEIniciar() {
-        xadrezManager.configurar(SALA, DONO, DONO, DONO, PARTICIPANTE, null);
+        xadrezManager.configurar(SALA, DONO, DONO, DONO, PARTICIPANTE, null, null);
         xadrezManager.iniciarPartida(SALA, DONO, DONO);
     }
 
@@ -540,6 +540,6 @@ class XadrezManagerIntegrationTest {
     // Helper para configurar e iniciar com notação específica
     private void configurarEIniciar(NotacaoXadrez notacao) {
         xadrezManager.configurarEIniciar(SALA, DONO, DONO, DONO, PARTICIPANTE, notacao,
-                null, null, null, null); // Sem controle de tempo
+                null, null, null, null, null); // Sem controle de tempo
     }
 }

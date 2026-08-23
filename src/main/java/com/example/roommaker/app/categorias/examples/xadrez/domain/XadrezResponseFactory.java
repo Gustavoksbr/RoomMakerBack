@@ -66,6 +66,23 @@ public class XadrezResponseFactory {
                 builder.meusPreLances(copiar(partida.preLancesDe(meuLadoBrancas)))
                         .preLancesCancelados(preLancesCancelados);
             }
+        } else {
+            // Sem partida em andamento — mas se uma acabou de ser arquivada
+            // (arquivarPartida zera partidaAtual ANTES deste método rodar, então
+            // isso vale tanto para o próprio evento FIM quanto para o reload logo
+            // depois), o cliente ainda precisa do resultado e dos lances dela: é
+            // o que deixa o tabuleiro na tela pra reanalisar, em vez de sumir com
+            // tudo assim que a partida termina. Pré-lances ficam de fora de
+            // propósito — não fazem sentido para uma partida que já acabou.
+            PartidaXadrez ultimaEncerrada = ultimaPartidaEncerrada(salaXadrez);
+            if (ultimaEncerrada != null) {
+                builder.partidaId(ultimaEncerrada.getId())
+                        .lances(new ArrayList<>(ultimaEncerrada.getLances()))
+                        .resultado(ultimaEncerrada.getResultado() != null ? ultimaEncerrada.getResultado().name() : null)
+                        .motivo(ultimaEncerrada.getMotivo() != null ? ultimaEncerrada.getMotivo().name() : null)
+                        .lancesIlegaisBrancas(ultimaEncerrada.getLancesIlegaisBrancas())
+                        .lancesIlegaisPretas(ultimaEncerrada.getLancesIlegaisPretas());
+            }
         }
 
         if (username != null && salaXadrez.getHistoricoPorUsername().containsKey(username)) {
@@ -77,6 +94,34 @@ public class XadrezResponseFactory {
 
     public XadrezResponse construir(SalaXadrez salaXadrez, String username, String evento) {
         return construir(salaXadrez, username, evento, false);
+    }
+
+    /**
+     * A última partida encerrada com o par brancas/pretas ATUAL da sala, ou
+     * null se nenhuma das duas nunca jogou aqui.
+     *
+     * {@code historicoPorUsername} é por username e pode ter jogos de
+     * configurações antigas da sala (outro par de jogadores); mas
+     * {@code arquivarPartida} adiciona o MESMO objeto à lista de brancas e de
+     * pretas, então o último item da lista de qualquer um dos dois já é,
+     * necessariamente, a partida que acabou de terminar com a configuração
+     * atual — não precisa comparar usernameBrancas/usernamePretas dentro da
+     * partida arquivada.
+     */
+    private PartidaXadrez ultimaPartidaEncerrada(SalaXadrez salaXadrez) {
+        PartidaXadrez daBrancas = ultimaDaLista(salaXadrez, salaXadrez.getUsernameBrancas());
+        if (daBrancas != null) {
+            return daBrancas;
+        }
+        return ultimaDaLista(salaXadrez, salaXadrez.getUsernamePretas());
+    }
+
+    private PartidaXadrez ultimaDaLista(SalaXadrez salaXadrez, String username) {
+        if (username == null) {
+            return null;
+        }
+        List<PartidaXadrez> lista = salaXadrez.getHistoricoPorUsername().get(username);
+        return (lista == null || lista.isEmpty()) ? null : lista.get(lista.size() - 1);
     }
 
     /**

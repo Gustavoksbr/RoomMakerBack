@@ -60,8 +60,19 @@ public class PartidaXadrez {
     @Builder.Default
     private List<PreLance> preLancesPretas = new ArrayList<>();
 
-    /** Quantos pré-lances um jogador pode deixar enfileirados. */
-    public static final int MAX_PRE_LANCES = 8;
+    /**
+     * Quantos pré-lances um jogador pode deixar enfileirados.
+     *
+     * O chess.com não trava isso de verdade (o fórum deles só cita "10 numa
+     * sequência" como orientação de UX, não um limite técnico) — mas aqui a
+     * fila inteira é regravada no documento da sala a cada mudança (ver
+     * SalaXadrezRepository.save), e o cliente recalcula a posição projetada do
+     * zero a cada item. Sem teto nenhum, uma sequência de "cavalo vai e volta"
+     * — sempre legal, sempre aceita — infla isso à toa. 20 é o dobro da
+     * diretriz do chess.com: folga suficiente pra nunca doer numa partida de
+     * verdade, sem deixar a fila crescer sem limite.
+     */
+    public static final int MAX_PRE_LANCES = 20;
 
     public boolean emAndamento() {
         return ResultadoXadrez.EM_ANDAMENTO.equals(resultado);

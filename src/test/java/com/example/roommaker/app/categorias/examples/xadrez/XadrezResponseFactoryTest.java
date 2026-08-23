@@ -139,4 +139,75 @@ class XadrezResponseFactoryTest {
             assertEquals(Boolean.TRUE, historico.get(0).getModoVisual());
         }
     }
+
+    @Nested
+    @DisplayName("Resultado da partida que acabou de terminar")
+    class PartidaEncerrada {
+        // arquivarPartida zera partidaAtual ANTES do factory montar a resposta —
+        // tanto no próprio evento FIM quanto num reload feito logo depois. Sem
+        // isso, resultado/lances chegam nulos bem na hora em que o cliente mais
+        // precisa deles: pra deixar o tabuleiro na tela pra reanalisar.
+
+        @Test
+        @DisplayName("resultado, motivo e lances vêm da partida arquivada, não da (agora nula) partidaAtual")
+        void vemDaArquivada() {
+            partida.encerrar(ResultadoXadrez.VITORIA_BRANCAS, MotivoXadrez.XEQUE_MATE);
+            sala.arquivarPartida(partida);
+
+            XadrezResponse r = factory.construir(sala, BRANCAS, "FIM");
+
+            assertEquals("VITORIA_BRANCAS", r.getResultado());
+            assertEquals("XEQUE_MATE", r.getMotivo());
+            assertEquals(List.of("e4"), r.getLances());
+            assertFalse(r.getPartidaEmAndamento());
+        }
+
+        @Test
+        @DisplayName("vale pros dois jogadores e pro espectador — não é dado privado")
+        void valeParaQualquerUm() {
+            partida.encerrar(ResultadoXadrez.EMPATE, MotivoXadrez.REPETICAO_TRIPLA);
+            sala.arquivarPartida(partida);
+
+            assertEquals("EMPATE", factory.construir(sala, PRETAS, "FIM").getResultado());
+            assertEquals("EMPATE", factory.construir(sala, ESPECTADOR, "FIM").getResultado());
+            assertEquals("EMPATE", factory.construir(sala, null, "FIM").getResultado());
+        }
+
+        @Test
+        @DisplayName("continua valendo num reload — não é só o evento FIM ao vivo")
+        void sobreviveAoReload() {
+            partida.encerrar(ResultadoXadrez.VITORIA_PRETAS, MotivoXadrez.TEMPO_ESGOTADO);
+            sala.arquivarPartida(partida);
+
+            // Um reload chama mostrar(), que pede a resposta sem nenhum evento.
+            XadrezResponse r = factory.construir(sala, BRANCAS, null);
+
+            assertEquals("VITORIA_PRETAS", r.getResultado());
+            assertEquals("TEMPO_ESGOTADO", r.getMotivo());
+        }
+
+        @Test
+        @DisplayName("sem pré-lances — não fazem sentido numa partida que já acabou")
+        void semPreLances() {
+            partida.encerrar(ResultadoXadrez.VITORIA_BRANCAS, MotivoXadrez.DESISTENCIA);
+            sala.arquivarPartida(partida);
+
+            assertNull(factory.construir(sala, BRANCAS, "FIM").getMeusPreLances());
+        }
+
+        @Test
+        @DisplayName("sala sem nenhuma partida jogada: sem partida atual e sem arquivada, não inventa resultado")
+        void semPartidaNenhuma() {
+            SalaXadrez vazia = SalaXadrez.builder()
+                    .nomeSala("vazia").usernameDono(BRANCAS)
+                    .usernameBrancas(BRANCAS).usernamePretas(PRETAS)
+                    .notacao(NotacaoXadrez.INGLESA).modoVisual(true)
+                    .build();
+
+            XadrezResponse r = factory.construir(vazia, BRANCAS, null);
+
+            assertNull(r.getResultado());
+            assertNull(r.getLances());
+        }
+    }
 }

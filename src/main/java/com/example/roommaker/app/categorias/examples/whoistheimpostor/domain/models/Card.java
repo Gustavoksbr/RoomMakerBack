@@ -122,5 +122,6 @@ public enum Card {
     ELECTROGIANT,
     LAVA,
     GOLEM,
-    RONIN
+    RONIN,
+    MINIONGIANT
 }

@@ -78,7 +78,20 @@ public class UsuarioManager {
     }
 
     public Response authenticate(Usuario usuario) {
-        Usuario usuarioEncontrado = this.matchesThrow404(usuario); // verifica se a senha esta correta
+        // Verifica se é email ou username
+        boolean isEmail = usuario.getUsername().contains("@");
+        
+        Usuario usuarioEncontrado;
+        if (isEmail) {
+            // Busca por email
+            usuarioEncontrado = this.userRepository.encontrarPorEmail(usuario.getUsername());
+            // Verifica a senha
+            authService.matches(usuario.getPassword(), usuarioEncontrado.getPassword());
+        } else {
+            // Busca por username (comportamento original)
+            usuarioEncontrado = this.matchesThrow404(usuario);
+        }
+        
         if (usuarioEncontrado.getDoisFatores()) { // verifica se o usuario tem 2fa ativado
             this.authService.sendVerificationCode(usuarioEncontrado.getEmail(), usuarioEncontrado.getUsername());
             return new UsuarioBasicAuth(usuarioEncontrado.getUsername());

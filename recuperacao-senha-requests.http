@@ -1,0 +1,69 @@
+### Recuperação de Senha - Testes de API
+### Base URL
+@baseUrl = http://localhost:8080
+
+### 1. Criar usuário de teste (se necessário)
+POST {{baseUrl}}/cadastro
+Content-Type: application/json
+
+{
+  "username": "testesenha",
+  "email": "seu-email@example.com",
+  "password": "senha123",
+  "descricao": "Usuário de teste"
+}
+
+### 2. Solicitar código de recuperação de senha
+POST {{baseUrl}}/usuario/esquecisenha
+Content-Type: application/json
+
+{
+  "email": "seu-email@example.com"
+}
+
+### 3. Redefinir senha com código recebido
+POST {{baseUrl}}/usuario/novasenha
+Content-Type: application/json
+
+{
+  "email": "seu-email@example.com",
+  "codigo": "123456",
+  "password": "novaSenha123"
+}
+
+### 4. Login com nova senha
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+  "username": "testesenha",
+  "password": "novaSenha123"
+}
+
+### Testes de Erro
+
+### Erro: Email não cadastrado
+POST {{baseUrl}}/usuario/esquecisenha
+Content-Type: application/json
+
+{
+  "email": "emailinexistente@example.com"
+}
+
+### Erro: Código incorreto
+POST {{baseUrl}}/usuario/novasenha
+Content-Type: application/json
+
+{
+  "email": "seu-email@example.com",
+  "codigo": "000000",
+  "password": "novaSenha123"
+}
+
+### Erro: Email inválido
+POST {{baseUrl}}/usuario/esquecisenha
+Content-Type: application/json
+
+{
+  "email": "emailinvalido"
+}
